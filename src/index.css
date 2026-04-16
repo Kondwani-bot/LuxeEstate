@@ -1,0 +1,92 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  
+  --color-background: #0b0c10;
+  --color-foreground: #ffffff;
+  
+  --color-primary: #ffffff;
+  --color-primary-foreground: #0b0c10;
+  
+  --color-secondary: rgba(255, 255, 255, 0.08);
+  --color-secondary-foreground: #ffffff;
+  
+  --color-muted: rgba(255, 255, 255, 0.05);
+  --color-muted-foreground: rgba(255, 255, 255, 0.6);
+  
+  --color-accent: #bb86fc;
+  --color-accent-foreground: #000000;
+  
+  --color-glass: rgba(255, 255, 255, 0.08);
+  --color-glass-border: rgba(255, 255, 255, 0.12);
+
+  --color-border: var(--color-glass-border);
+  --color-input: var(--color-glass-border);
+  --color-ring: var(--color-accent);
+  
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+  --radius-2xl: 1.5rem;
+  --radius-3xl: 2rem;
+}
+
+@layer base {
+  body {
+    @apply bg-background text-foreground font-sans min-h-screen;
+    background-image: radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
+                      radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%), 
+                      radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%);
+    background-attachment: fixed;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-bold tracking-tight;
+  }
+
+  * {
+    @apply border-border;
+  }
+}
+
+@utility glass-panel {
+  background-color: var(--color-glass);
+  backdrop-filter: blur(15px);
+  border: 1px solid var(--color-glass-border);
+}
+
+@utility luxury-card {
+  @apply glass-panel rounded-[20px] overflow-hidden transition-all duration-300;
+}
+
+@utility luxury-input {
+  background-color: transparent;
+  border: none;
+  color: white;
+  &::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+  }
+}
+
+@utility btn-glass {
+  background-color: var(--color-glass);
+  backdrop-filter: blur(5px);
+  border: 1px solid var(--color-glass-border);
+  border-radius: 0.5rem;
+  padding: 0.5rem 1.25rem;
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+}
+
+@utility logo-gradient {
+  background: linear-gradient(to right, #fff, #bb86fc);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
