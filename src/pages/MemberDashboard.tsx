@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Plus, Search, Filter, MoreVertical } from 'lucide-react';
+import { Plus, Search, Filter, MoreVertical, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -10,9 +10,34 @@ import Navbar from '@/components/Navbar';
 import PropertyCard from '@/components/PropertyCard';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { supabase } from '@/lib/supabase';
+import { useNavigate } from 'react-router-dom';
 
 export default function MemberDashboard() {
   const [activeTab, setActiveTab] = useState('listings');
+  const [user, setUser] = useState<any>(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setUser(session.user);
+      }
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setUser(session.user);
+      } else {
+        setUser(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   const myListings = MOCK_PROPERTIES.filter(p => p.submittedBy === 'John Member');
 
   const stats = [
@@ -20,6 +45,14 @@ export default function MemberDashboard() {
     { label: 'Pending Review', value: myListings.filter(p => p.status === 'Pending').length, icon: Filter },
     { label: 'Approved', value: myListings.filter(p => p.status === 'Approved').length, icon: Plus },
   ];
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    navigate('/');
+  };
+
+  const displayName = user?.user_metadata?.full_name || 'John Member';
+  const displayInitials = displayName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
 
   return (
     <div className="flex h-screen bg-background text-white">
@@ -33,12 +66,19 @@ export default function MemberDashboard() {
           </div>
           <div className="flex items-center gap-4">
             <div className="text-right hidden sm:block">
-              <div className="text-sm font-medium">John Member</div>
+              <div className="text-sm font-medium">{displayName}</div>
               <div className="text-[10px] uppercase tracking-widest text-accent">Premium Member</div>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center border border-accent/20">
-              <span className="text-accent font-bold">JM</span>
-            </div>
+            {user?.user_metadata?.avatar_url ? (
+              <img src={user.user_metadata.avatar_url} alt={displayName} className="w-10 h-10 rounded-xl border border-accent/20 object-cover" />
+            ) : (
+              <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center border border-accent/20">
+                <span className="text-accent font-bold">{displayInitials}</span>
+              </div>
+            )}
+            <button onClick={handleSignOut} className="ml-4 text-muted-foreground hover:text-white transition-colors" title="Sign Out">
+              <LogOut className="w-5 h-5" />
+            </button>
           </div>
         </header>
 

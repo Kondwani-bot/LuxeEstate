@@ -4,17 +4,20 @@ import { Shield, X, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useNavigate } from 'react-router-dom';
 
 export default function AdminLoginPopup() {
   const [isOpen, setIsOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const navigate = useNavigate();
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (email === 'admin@gmail.com' && password === '1234') {
-      window.location.href = '/admin';
+      setIsOpen(false);
+      navigate('/admin');
     } else {
       setError('Invalid credentials. Please try again.');
     }
