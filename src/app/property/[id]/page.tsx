@@ -164,7 +164,7 @@ export default function PropertyDetails({ params }: { params: Promise<{ id: stri
                   <button className="w-full rounded-xl h-12 border border-slate-300 text-slate-700 font-bold hover:bg-slate-50 transition-all">Contact Agent</button>
                 </div>
                 <p className="mt-6 text-[10px] text-center text-slate-400 uppercase tracking-widest font-bold">
-                  Reference ID: ZICTA-{property.id}
+                  Reference ID: LUXE-{property.id}
                 </p>
               </div>
             </div>

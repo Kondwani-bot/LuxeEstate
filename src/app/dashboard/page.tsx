@@ -106,10 +106,53 @@ export default function MemberDashboard() {
     const title = formData.get('title') as string;
     const price = Number(formData.get('price'));
     const location = formData.get('location') as string;
-    const imageUrl = formData.get('imageUrl') as string;
     const description = formData.get('description') as string;
+    const mainImageFile = formData.get('mainImage') as File;
+    const slideshowFiles = formData.getAll('slideshowImages') as File[];
+
+    let finalMainUrl = 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&q=80'; // fallback
+    const finalSlideshowUrls: string[] = [];
+
+    const uploadImage = async (file: File) => {
+      if (!file || file.size === 0) return null;
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+      const filePath = `properties/${user.id}/${fileName}`;
+      
+      const { data, error } = await supabase.storage
+        .from('property-images')
+        .upload(filePath, file);
+
+      if (error) {
+        console.warn('Storage upload failed (bucket might not exist). Using local preview URL.', error);
+        return URL.createObjectURL(file); // Fallback to local URL so UI works instantly
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('property-images')
+        .getPublicUrl(filePath);
+        
+      return publicUrl;
+    };
 
     try {
+      if (mainImageFile && mainImageFile.size > 0) {
+        const uploadedMain = await uploadImage(mainImageFile);
+        if (uploadedMain) finalMainUrl = uploadedMain;
+      }
+
+      for (const file of slideshowFiles) {
+        if (file && file.size > 0) {
+          const uploaded = await uploadImage(file);
+          if (uploaded) finalSlideshowUrls.push(uploaded);
+        }
+      }
+
+      // If no slideshow images were selected/uploaded, default to the main image
+      if (finalSlideshowUrls.length === 0) {
+        finalSlideshowUrls.push(finalMainUrl);
+      }
+
       const { data, error } = await supabase
         .from('properties')
         .insert([
@@ -118,8 +161,8 @@ export default function MemberDashboard() {
             description,
             price,
             location,
-            image_url: imageUrl,
-            images: [imageUrl],
+            image_url: finalMainUrl,
+            images: finalSlideshowUrls,
             type: 'House', // Defaulting for simple form
             status: 'Pending',
             submitted_by: user.user_metadata?.full_name || 'John Member',
@@ -299,14 +342,20 @@ export default function MemberDashboard() {
                       <div className="w-8 h-8 rounded-lg bg-sky-50 border border-sky-100 flex items-center justify-center text-sky-600 text-xs font-bold shadow-sm">02</div>
                       <h3 className="text-sm uppercase tracking-[0.2em] font-bold text-slate-800">Location & Media</h3>
                     </div>
+                    <div className="space-y-2">
+                      <Label className="uppercase tracking-widest text-[10px] text-slate-500 font-bold">Location</Label>
+                      <Input name="location" required placeholder="e.g. Lusaka, Zambia" className="bg-white border border-slate-200 rounded-xl px-4 h-12 focus-visible:ring-sky-500 text-slate-900 shadow-sm" />
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                      <div className="space-y-2">
-                        <Label className="uppercase tracking-widest text-[10px] text-slate-500 font-bold">Location</Label>
-                        <Input name="location" required placeholder="e.g. Lusaka, Zambia" className="bg-white border border-slate-200 rounded-xl px-4 h-12 focus-visible:ring-sky-500 text-slate-900 shadow-sm" />
+                      <div className="space-y-2 border-2 border-dashed border-slate-200 p-6 rounded-2xl bg-slate-50 hover:bg-slate-100 transition-colors text-center relative">
+                        <Label className="uppercase tracking-widest text-[10px] text-sky-600 font-bold cursor-pointer inline-block mt-2">Upload Main Image</Label>
+                        <p className="text-xs text-slate-400 mt-1">Select a featured cover photo (JPG/PNG)</p>
+                        <Input type="file" name="mainImage" accept="image/*" required className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
                       </div>
-                      <div className="space-y-2">
-                        <Label className="uppercase tracking-widest text-[10px] text-slate-500 font-bold">Main Image URL</Label>
-                        <Input name="imageUrl" required placeholder="https://images.unsplash.com/..." className="bg-white border border-slate-200 rounded-xl px-4 h-12 focus-visible:ring-sky-500 text-slate-900 shadow-sm" />
+                      <div className="space-y-2 border-2 border-dashed border-slate-200 p-6 rounded-2xl bg-slate-50 hover:bg-slate-100 transition-colors text-center relative">
+                        <Label className="uppercase tracking-widest text-[10px] text-sky-600 font-bold cursor-pointer inline-block mt-2">Upload Slideshow Photos</Label>
+                        <p className="text-xs text-slate-400 mt-1">Select multiple high-res interior photos</p>
+                        <Input type="file" name="slideshowImages" multiple accept="image/*" required className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
                       </div>
                     </div>
                   </div>

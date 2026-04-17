@@ -28,7 +28,7 @@ export default function Sidebar({ role }: SidebarProps) {
   return (
     <div className="w-64 h-full bg-white border-r border-slate-200 flex flex-col py-8 shadow-sm relative z-20">
       <div className="px-6 mb-12">
-        <div className="text-[10px] uppercase tracking-[0.3em] text-sky-600 font-bold mb-1">ZICTA Portal</div>
+        <div className="text-[10px] uppercase tracking-[0.3em] text-sky-600 font-bold mb-1">Luxe Estate Portal</div>
         <div className="text-lg font-bold tracking-tight text-slate-800">{role === 'member' ? 'Member Access' : 'Administrator'}</div>
       </div>
 

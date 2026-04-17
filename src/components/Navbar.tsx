@@ -24,9 +24,9 @@ export default function Navbar() {
   }, []);
 
   const navLinks = [
-    { name: 'Collection', path: '/' },
-    { name: 'About', path: '#' },
-    { name: 'Contact', path: '#' },
+    { name: 'Collection', path: '/collections' },
+    { name: 'About', path: '/about' },
+    { name: 'Contact', path: '/contact' },
   ];
 
   return (
@@ -35,7 +35,7 @@ export default function Navbar() {
     }`}>
       <div className="container px-4 flex justify-between items-center">
         <Link href="/" className="text-2xl font-extrabold tracking-tighter logo-gradient">
-          ZICTA ESTATE
+          LUXE ESTATE
         </Link>
 
         {/* Desktop Nav */}

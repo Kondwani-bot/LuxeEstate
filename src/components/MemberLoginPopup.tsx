@@ -98,7 +98,7 @@ export default function MemberLoginPopup() {
               </div>
               
               <p className="text-center mt-6 text-[9px] text-slate-500 font-light leading-relaxed uppercase tracking-widest">
-                By signing in, you agree to ZICTA Estate's <br />
+                By signing in, you agree to Luxe Estate's <br />
                 <span className="underline cursor-pointer hover:text-slate-800 transition-colors">Terms of Service</span> and <span className="underline cursor-pointer hover:text-slate-800 transition-colors">Privacy Policy</span>.
               </p>
             </div>
