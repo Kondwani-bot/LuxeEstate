@@ -15,12 +15,13 @@ export default function Sidebar({ role }: SidebarProps) {
   const memberLinks = [
     { name: 'My Listings', path: '/dashboard', icon: List },
     { name: 'Submit Property', path: '/dashboard/submit', icon: PlusCircle },
+    { name: 'Inquiries', path: '/dashboard/inquiries', icon: ShieldCheck },
   ];
 
   const adminLinks = [
     { name: 'Pending Review', path: '/admin', icon: ShieldCheck },
     { name: 'All Listings', path: '/admin/all', icon: List },
-    { name: 'Settings', path: '#', icon: Settings },
+    { name: 'Settings', path: '/admin/settings', icon: Settings },
   ];
 
   const links = role === 'member' ? memberLinks : adminLinks;
