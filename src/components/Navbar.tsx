@@ -1,5 +1,8 @@
+'use client';
+
 import { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Menu, X, User, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'motion/react';
@@ -9,8 +12,8 @@ import MemberLoginPopup from './MemberLoginPopup';
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const location = useLocation();
-  const isDashboard = location.pathname.includes('dashboard');
+  const pathname = usePathname();
+  const isDashboard = pathname?.includes('dashboard');
 
   useEffect(() => {
     const handleScroll = () => {
@@ -31,7 +34,7 @@ export default function Navbar() {
       isScrolled || isDashboard ? 'bg-black/20 backdrop-blur-md border-b border-glass-border py-4' : 'bg-transparent py-8'
     }`}>
       <div className="container px-4 flex justify-between items-center">
-        <Link to="/" className="text-2xl font-extrabold tracking-tighter logo-gradient">
+        <Link href="/" className="text-2xl font-extrabold tracking-tighter logo-gradient">
           LUMINA
         </Link>
 
@@ -41,7 +44,7 @@ export default function Navbar() {
             {navLinks.map((link) => (
               <Link 
                 key={link.name} 
-                to={link.path} 
+                href={link.path} 
                 className="text-sm font-medium text-muted-foreground hover:text-white transition-colors"
               >
                 {link.name}
@@ -74,7 +77,7 @@ export default function Navbar() {
             {navLinks.map((link) => (
               <Link 
                 key={link.name} 
-                to={link.path} 
+                href={link.path} 
                 className="text-sm uppercase tracking-widest font-bold text-muted-foreground hover:text-white transition-colors"
                 onClick={() => setIsMobileMenuOpen(false)}
               >

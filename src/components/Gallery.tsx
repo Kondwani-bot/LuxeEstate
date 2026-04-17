@@ -66,11 +66,11 @@ export default function Gallery({ images }: GalleryProps) {
         {/* Lightbox Trigger */}
         <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
           <Dialog>
-            <DialogTrigger asChild>
+            <DialogTrigger render={
               <button className="w-10 h-10 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white hover:bg-black/60 transition-all">
                 <Maximize2 className="w-5 h-5" />
               </button>
-            </DialogTrigger>
+            } />
             <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 bg-transparent border-none shadow-none flex items-center justify-center">
               <div className="relative w-full h-full flex items-center justify-center">
                 <img 

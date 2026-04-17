@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 import { Instagram, Twitter, Facebook, Mail } from 'lucide-react';
 import AdminLoginPopup from './AdminLoginPopup';
 
@@ -10,9 +10,9 @@ export default function Footer() {
           &copy; 2024 Lumina Real Estate. All rights reserved.
         </div>
         <div className="flex items-center gap-8">
-          <Link to="#" className="text-sm text-muted-foreground hover:text-white transition-colors">Properties</Link>
-          <Link to="#" className="text-sm text-muted-foreground hover:text-white transition-colors">About</Link>
-          <Link to="#" className="text-sm text-muted-foreground hover:text-white transition-colors">Contact</Link>
+          <Link href="#" className="text-sm text-muted-foreground hover:text-white transition-colors">Properties</Link>
+          <Link href="#" className="text-sm text-muted-foreground hover:text-white transition-colors">About</Link>
+          <Link href="#" className="text-sm text-muted-foreground hover:text-white transition-colors">Contact</Link>
           <AdminLoginPopup />
         </div>
       </div>

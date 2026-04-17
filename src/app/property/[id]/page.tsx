@@ -1,4 +1,7 @@
-import { useParams, Link } from 'react-router-dom';
+'use client';
+
+import { use } from 'react';
+import Link from 'next/link';
 import { motion } from 'motion/react';
 import { MapPin, ArrowLeft, Share2, Heart, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -9,8 +12,8 @@ import Footer from '@/components/Footer';
 
 import Gallery from '@/components/Gallery';
 
-export default function PropertyDetails() {
-  const { id } = useParams();
+export default function PropertyDetails({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
   const property = MOCK_PROPERTIES.find(p => p.id === id);
 
   if (!property) {
@@ -18,7 +21,7 @@ export default function PropertyDetails() {
       <div className="min-h-screen flex items-center justify-center bg-background text-white">
         <div className="text-center">
           <h2 className="text-3xl mb-4 font-bold">Property Not Found</h2>
-          <Link to="/">
+          <Link href="/">
             <button className="btn-glass">Return Home</button>
           </Link>
         </div>
@@ -34,7 +37,7 @@ export default function PropertyDetails() {
         <div className="container px-4 py-8">
           {/* Breadcrumbs & Actions */}
           <div className="flex justify-between items-center mb-8">
-            <Link to="/" className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-muted-foreground hover:text-white transition-colors">
+            <Link href="/" className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-muted-foreground hover:text-white transition-colors">
               <ArrowLeft className="w-4 h-4" /> Back to Collection
             </Link>
             <div className="flex gap-4">

@@ -1,5 +1,8 @@
+'use client';
+
 import { LayoutDashboard, PlusCircle, List, LogOut, ShieldCheck, Settings } from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
 interface SidebarProps {
@@ -7,7 +10,7 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ role }: SidebarProps) {
-  const location = useLocation();
+  const pathname = usePathname();
 
   const memberLinks = [
     { name: 'My Listings', path: '/dashboard', icon: List },
@@ -32,11 +35,11 @@ export default function Sidebar({ role }: SidebarProps) {
       <nav className="flex-1 px-4 space-y-2">
         {links.map((link) => {
           const Icon = link.icon;
-          const isActive = location.pathname === link.path;
+          const isActive = pathname === link.path;
           return (
             <Link
               key={link.name}
-              to={link.path}
+              href={link.path}
               className={cn(
                 "flex items-center gap-3 px-4 py-3 text-xs font-bold uppercase tracking-widest transition-all rounded-xl",
                 isActive 
@@ -53,7 +56,7 @@ export default function Sidebar({ role }: SidebarProps) {
 
       <div className="px-4 mt-auto">
         <Link
-          to="/"
+          href="/"
           className="flex items-center gap-3 px-4 py-3 text-xs font-bold uppercase tracking-widest text-red-400 hover:bg-red-500/10 transition-all rounded-xl"
         >
           <LogOut className="w-4 h-4" />

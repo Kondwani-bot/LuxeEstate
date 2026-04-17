@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 import { MapPin, ArrowRight } from 'lucide-react';
 import { Property } from '@/types';
 import { Badge } from '@/components/ui/badge';
@@ -38,7 +38,7 @@ export default function PropertyCard({ property }: PropertyCardProps) {
         <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
           <MapPin className="w-4 h-4" /> {property.location}
         </div>
-        <Link to={`/property/${property.id}`}>
+        <Link href={`/property/${property.id}`}>
           <button className="btn-details w-full py-3 bg-white/5 border border-glass-border rounded-xl text-sm font-medium hover:bg-white/10 transition-all">
             View Details
           </button>

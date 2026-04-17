@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Plus, Search, Filter, MoreVertical, LogOut } from 'lucide-react';
@@ -11,12 +13,12 @@ import PropertyCard from '@/components/PropertyCard';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/lib/supabase';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 
 export default function MemberDashboard() {
   const [activeTab, setActiveTab] = useState('listings');
   const [user, setUser] = useState<any>(null);
-  const navigate = useNavigate();
+  const router = useRouter();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -48,7 +50,7 @@ export default function MemberDashboard() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    navigate('/');
+    router.push('/');
   };
 
   const displayName = user?.user_metadata?.full_name || 'John Member';
