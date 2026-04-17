@@ -14,10 +14,13 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
+import { Property } from '@/types';
 
 export default function MemberDashboard() {
   const [activeTab, setActiveTab] = useState('listings');
   const [user, setUser] = useState<any>(null);
+  const [myListings, setMyListings] = useState<Property[]>([]);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
@@ -40,7 +43,43 @@ export default function MemberDashboard() {
     return () => subscription.unsubscribe();
   }, []);
 
-  const myListings = MOCK_PROPERTIES.filter(p => p.submittedBy === 'John Member');
+  useEffect(() => {
+    const fetchUserProperties = async () => {
+      if (!user) return;
+      try {
+        const { data, error } = await supabase
+          .from('properties')
+          .select('*')
+          .eq('submitted_by', user.user_metadata?.full_name || 'John Member'); // Temporarily matching mock data logic until full real auth names are configured
+
+        if (error) throw error;
+        if (data) {
+          const formattedData: Property[] = data.map(p => ({
+            id: p.id,
+            title: p.title,
+            description: p.description,
+            price: p.price,
+            location: p.location,
+            imageUrl: p.image_url,
+            images: p.images || [],
+            type: p.type as any,
+            status: p.status as any,
+            submittedBy: p.submitted_by || '',
+            submittedAt: p.submitted_at,
+            features: p.features || []
+          }));
+          setMyListings(formattedData);
+        }
+      } catch (err) {
+        console.error('Error fetching user properties', err);
+        setMyListings(MOCK_PROPERTIES.filter(p => p.submittedBy === 'John Member'));
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserProperties();
+  }, [user]);
 
   const stats = [
     { label: 'Total Listings', value: myListings.length, icon: MoreVertical },
@@ -48,9 +87,75 @@ export default function MemberDashboard() {
     { label: 'Approved', value: myListings.filter(p => p.status === 'Approved').length, icon: Plus },
   ];
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     router.push('/');
+  };
+
+  const handlePropertySubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!user) {
+      alert("You need to be logged in to submit a property");
+      return;
+    }
+
+    setIsSubmitting(true);
+    const formData = new FormData(e.currentTarget);
+    const title = formData.get('title') as string;
+    const price = Number(formData.get('price'));
+    const location = formData.get('location') as string;
+    const imageUrl = formData.get('imageUrl') as string;
+    const description = formData.get('description') as string;
+
+    try {
+      const { data, error } = await supabase
+        .from('properties')
+        .insert([
+          {
+            title,
+            description,
+            price,
+            location,
+            image_url: imageUrl,
+            images: [imageUrl],
+            type: 'House', // Defaulting for simple form
+            status: 'Pending',
+            submitted_by: user.user_metadata?.full_name || 'John Member',
+            features: []
+          }
+        ])
+        .select();
+
+      if (error) throw error;
+      
+      // Update UI manually using mapped type properties rather than waiting for next poll to load visual
+      if (data && data.length > 0) {
+        const newProperty: Property = {
+          id: data[0].id,
+          title: data[0].title,
+          description: data[0].description,
+          price: data[0].price,
+          location: data[0].location,
+          imageUrl: data[0].image_url,
+          images: data[0].images || [],
+          type: data[0].type as any,
+          status: data[0].status as any,
+          submittedBy: data[0].submitted_by || '',
+          submittedAt: data[0].submitted_at,
+          features: data[0].features || []
+        };
+        setMyListings(prev => [newProperty, ...prev]);
+        setActiveTab('listings');
+        (e.target as HTMLFormElement).reset(); // Reset form
+      }
+    } catch (error) {
+      console.error('Error adding document: ', error);
+      alert('Failed to submit listing. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const displayName = user?.user_metadata?.full_name || 'John Member';
@@ -169,7 +274,7 @@ export default function MemberDashboard() {
                   <p className="text-muted-foreground text-sm">Provide detailed information to help our team review your listing faster.</p>
                 </div>
                 
-                <form className="p-8 md:p-12 space-y-12">
+                <form className="p-8 md:p-12 space-y-12" onSubmit={handlePropertySubmit}>
                   {/* Section 1: Basic Info */}
                   <div className="space-y-6">
                     <div className="flex items-center gap-4 mb-2">
@@ -179,11 +284,11 @@ export default function MemberDashboard() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                       <div className="space-y-2">
                         <Label className="uppercase tracking-widest text-[10px] text-muted-foreground">Property Title</Label>
-                        <Input placeholder="e.g. Oceanfront Modern Villa" className="luxury-input bg-white/5 border border-glass-border rounded-xl px-4 h-12 focus:border-accent/50" />
+                        <Input name="title" required placeholder="e.g. Oceanfront Modern Villa" className="luxury-input bg-white/5 border border-glass-border rounded-xl px-4 h-12 focus:border-accent/50" />
                       </div>
                       <div className="space-y-2">
                         <Label className="uppercase tracking-widest text-[10px] text-muted-foreground">Price (Kwacha)</Label>
-                        <Input type="number" placeholder="e.g. 2500000" className="luxury-input bg-white/5 border border-glass-border rounded-xl px-4 h-12 focus:border-accent/50" />
+                        <Input type="number" name="price" required placeholder="e.g. 2500000" className="luxury-input bg-white/5 border border-glass-border rounded-xl px-4 h-12 focus:border-accent/50" />
                       </div>
                     </div>
                   </div>
@@ -197,11 +302,11 @@ export default function MemberDashboard() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                       <div className="space-y-2">
                         <Label className="uppercase tracking-widest text-[10px] text-muted-foreground">Location</Label>
-                        <Input placeholder="e.g. Beverly Hills, CA" className="luxury-input bg-white/5 border border-glass-border rounded-xl px-4 h-12 focus:border-accent/50" />
+                        <Input name="location" required placeholder="e.g. Beverly Hills, CA" className="luxury-input bg-white/5 border border-glass-border rounded-xl px-4 h-12 focus:border-accent/50" />
                       </div>
                       <div className="space-y-2">
                         <Label className="uppercase tracking-widest text-[10px] text-muted-foreground">Main Image URL</Label>
-                        <Input placeholder="https://images.unsplash.com/..." className="luxury-input bg-white/5 border border-glass-border rounded-xl px-4 h-12 focus:border-accent/50" />
+                        <Input name="imageUrl" required placeholder="https://images.unsplash.com/..." className="luxury-input bg-white/5 border border-glass-border rounded-xl px-4 h-12 focus:border-accent/50" />
                       </div>
                     </div>
                   </div>
@@ -214,13 +319,15 @@ export default function MemberDashboard() {
                     </div>
                     <div className="space-y-2">
                       <Label className="uppercase tracking-widest text-[10px] text-muted-foreground">Description</Label>
-                      <Textarea placeholder="Describe the property's unique features, history, and amenities..." className="luxury-input bg-white/5 border border-glass-border rounded-xl px-4 py-4 min-h-[180px] focus:border-accent/50 resize-none" />
+                      <Textarea name="description" required placeholder="Describe the property's unique features, history, and amenities..." className="luxury-input bg-white/5 border border-glass-border rounded-xl px-4 py-4 min-h-[180px] focus:border-accent/50 resize-none" />
                     </div>
                   </div>
 
                   <div className="pt-8 flex flex-col sm:flex-row justify-end gap-4 border-t border-glass-border">
                     <button type="button" onClick={() => setActiveTab('listings')} className="h-12 px-8 text-[10px] uppercase tracking-widest font-bold text-muted-foreground hover:text-white transition-colors">Discard Draft</button>
-                    <button type="submit" className="rounded-xl px-12 h-12 bg-accent text-black font-bold uppercase tracking-widest text-[10px] hover:bg-accent/90 transition-all shadow-lg shadow-accent/10">Submit for Review</button>
+                    <button type="submit" disabled={isSubmitting} className="rounded-xl px-12 h-12 bg-accent text-black font-bold uppercase tracking-widest text-[10px] hover:bg-accent/90 transition-all shadow-lg shadow-accent/10 disabled:opacity-50">
+                      {isSubmitting ? 'Submitting...' : 'Submit for Review'}
+                    </button>
                   </div>
                 </form>
               </div>

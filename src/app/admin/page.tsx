@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Check, X, Eye, Search, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { MOCK_PROPERTIES } from '@/data/mockData';
 import Sidebar from '@/components/Sidebar';
+import { supabase } from '@/lib/supabase';
+import { Property } from '@/types';
 import {
   Table,
   TableBody,
@@ -18,11 +20,59 @@ import {
 } from "@/components/ui/table";
 
 export default function AdminDashboard() {
-  const [properties, setProperties] = useState(MOCK_PROPERTIES);
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAdminProperties = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('properties')
+          .select('*');
+
+        if (error) throw error;
+        if (data) {
+          const formattedData: Property[] = data.map(p => ({
+            id: p.id,
+            title: p.title,
+            description: p.description,
+            price: p.price,
+            location: p.location,
+            imageUrl: p.image_url,
+            images: p.images || [],
+            type: p.type as any,
+            status: p.status as any,
+            submittedBy: p.submitted_by || '',
+            submittedAt: p.submitted_at,
+            features: p.features || []
+          }));
+          setProperties(formattedData);
+        }
+      } catch (err) {
+        console.error('Error fetching admin properties', err);
+        setProperties(MOCK_PROPERTIES);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAdminProperties();
+  }, []);
+
   const pendingProperties = properties.filter(p => p.status === 'Pending');
 
-  const handleAction = (id: string, status: 'Approved' | 'Rejected') => {
-    setProperties(prev => prev.map(p => p.id === id ? { ...p, status } : p));
+  const handleAction = async (id: string, status: 'Approved' | 'Rejected') => {
+    try {
+      const { error } = await supabase
+        .from('properties')
+        .update({ status })
+        .eq('id', id);
+        
+      if (error) throw error;
+      setProperties(prev => prev.map(p => p.id === id ? { ...p, status } : p));
+    } catch (err) {
+      console.error('Failed to update status', err);
+    }
   };
 
   return (

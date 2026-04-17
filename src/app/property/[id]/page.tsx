@@ -1,6 +1,6 @@
 'use client';
 
-import { use } from 'react';
+import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { motion } from 'motion/react';
 import { MapPin, ArrowLeft, Share2, Heart, Check } from 'lucide-react';
@@ -9,12 +9,60 @@ import { Badge } from '@/components/ui/badge';
 import { MOCK_PROPERTIES } from '@/data/mockData';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-
 import Gallery from '@/components/Gallery';
+import { supabase } from '@/lib/supabase';
+import { Property } from '@/types';
 
 export default function PropertyDetails({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const property = MOCK_PROPERTIES.find(p => p.id === id);
+  const [property, setProperty] = useState<Property | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProperty = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('properties')
+          .select('*')
+          .eq('id', id)
+          .single();
+
+        if (error) throw error;
+        
+        if (data) {
+          setProperty({
+            id: data.id,
+            title: data.title,
+            description: data.description,
+            price: data.price,
+            location: data.location,
+            imageUrl: data.image_url,
+            images: data.images || [],
+            type: data.type as any,
+            status: data.status as any,
+            submittedBy: data.submitted_by || '',
+            submittedAt: data.submitted_at,
+            features: data.features || []
+          });
+        }
+      } catch (err) {
+        console.error('Error fetching. Searching mock data', err);
+        const mockMatch = MOCK_PROPERTIES.find(p => p.id === id);
+        if (mockMatch) setProperty(mockMatch);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProperty();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background text-white">
+        <div className="text-xl animate-pulse">Loading property details...</div>
+      </div>
+    );
+  }
 
   if (!property) {
     return (

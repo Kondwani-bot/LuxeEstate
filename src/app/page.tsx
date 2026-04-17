@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Search, MapPin, Filter, SlidersHorizontal, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -9,8 +9,12 @@ import { MOCK_PROPERTIES } from '@/data/mockData';
 import PropertyCard from '@/components/PropertyCard';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { supabase } from '@/lib/supabase';
+import { Property } from '@/types';
 
 export default function Home() {
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterLocation, setFilterLocation] = useState('All');
   const [filterType, setFilterType] = useState('All');
@@ -19,11 +23,50 @@ export default function Home() {
   const [sortBy, setSortBy] = useState('newest');
   const [showFilters, setShowFilters] = useState(false);
 
-  const locations = useMemo(() => ['All', ...new Set(MOCK_PROPERTIES.map(p => p.location.split(',')[0]))], []);
+  useEffect(() => {
+    const fetchProperties = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('properties')
+          .select('*')
+          .eq('status', 'Approved');
+
+        if (error) throw error;
+        
+        if (data) {
+          // Map DB columns to our Property type
+          const formattedData: Property[] = data.map(p => ({
+            id: p.id,
+            title: p.title,
+            description: p.description,
+            price: p.price,
+            location: p.location,
+            imageUrl: p.image_url,
+            images: p.images || [],
+            type: p.type as any,
+            status: p.status as any,
+            submittedBy: p.submitted_by || '',
+            submittedAt: p.submitted_at,
+            features: p.features || []
+          }));
+          setProperties(formattedData);
+        }
+      } catch (err) {
+        console.error('Error fetching properties. Falling back to mock data.', err);
+        setProperties(MOCK_PROPERTIES); // Fallback if no backend
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProperties();
+  }, []);
+
+  const locations = useMemo(() => ['All', ...new Set(properties.map(p => p.location.split(',')[0]))], [properties]);
   const types = ['All', 'House', 'Apartment', 'Villa', 'Penthouse'];
 
   const filteredProperties = useMemo(() => {
-    return MOCK_PROPERTIES
+    return properties
       .filter(p => p.status === 'Approved')
       .filter(p => {
         const matchesSearch = p.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
