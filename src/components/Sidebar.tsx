@@ -26,10 +26,10 @@ export default function Sidebar({ role }: SidebarProps) {
   const links = role === 'member' ? memberLinks : adminLinks;
 
   return (
-    <div className="w-64 h-full bg-black/20 backdrop-blur-xl border-r border-glass-border flex flex-col py-8">
+    <div className="w-64 h-full bg-white border-r border-slate-200 flex flex-col py-8 shadow-sm relative z-20">
       <div className="px-6 mb-12">
-        <div className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground mb-1">Lumina Portal</div>
-        <div className="text-lg font-bold tracking-tight">{role === 'member' ? 'Member' : 'Admin'}</div>
+        <div className="text-[10px] uppercase tracking-[0.3em] text-sky-600 font-bold mb-1">ZICTA Portal</div>
+        <div className="text-lg font-bold tracking-tight text-slate-800">{role === 'member' ? 'Member Access' : 'Administrator'}</div>
       </div>
 
       <nav className="flex-1 px-4 space-y-2">
@@ -43,11 +43,11 @@ export default function Sidebar({ role }: SidebarProps) {
               className={cn(
                 "flex items-center gap-3 px-4 py-3 text-xs font-bold uppercase tracking-widest transition-all rounded-xl",
                 isActive 
-                  ? "bg-accent text-black" 
-                  : "text-muted-foreground hover:bg-white/5 hover:text-white"
+                  ? "bg-sky-50 text-sky-700 border border-sky-100" 
+                  : "text-slate-500 hover:bg-slate-50 hover:text-slate-900 border border-transparent"
               )}
             >
-              <Icon className="w-4 h-4" />
+              <Icon className="w-4 h-4 mt-[-1px]" />
               {link.name}
             </Link>
           );
@@ -57,10 +57,10 @@ export default function Sidebar({ role }: SidebarProps) {
       <div className="px-4 mt-auto">
         <Link
           href="/"
-          className="flex items-center gap-3 px-4 py-3 text-xs font-bold uppercase tracking-widest text-red-400 hover:bg-red-500/10 transition-all rounded-xl"
+          className="flex items-center gap-3 px-4 py-3 text-xs font-bold uppercase tracking-widest text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-all rounded-xl"
         >
-          <LogOut className="w-4 h-4" />
-          Sign Out
+          <LogOut className="w-4 h-4 mt-[-1px]" />
+          Return Home
         </Link>
       </div>
     </div>

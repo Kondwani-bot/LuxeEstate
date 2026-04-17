@@ -52,12 +52,12 @@ export default function MemberLoginPopup() {
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="relative w-full max-w-md glass-panel rounded-3xl overflow-hidden shadow-2xl"
+            className="relative w-full max-w-md bg-white rounded-3xl overflow-hidden shadow-2xl border border-slate-200"
           >
-            <div className="bg-white/5 p-8 text-white flex items-center gap-4 border-b border-glass-border">
+            <div className="bg-slate-50 p-8 text-slate-800 flex items-center gap-4 border-b border-slate-200">
               <button 
                 onClick={() => setIsOpen(false)} 
-                className="hover:text-accent transition-colors flex items-center gap-2"
+                className="hover:text-sky-600 transition-colors flex items-center gap-2"
                 title="Go Back"
               >
                 <ArrowLeft className="w-5 h-5" />
@@ -67,8 +67,8 @@ export default function MemberLoginPopup() {
 
             <div className="p-8 space-y-6">
               <div className="text-center mb-8">
-                <CardTitle className="text-3xl mb-2 text-white">Welcome Back</CardTitle>
-                <CardDescription className="uppercase tracking-widest text-[10px] text-muted-foreground">
+                <CardTitle className="text-3xl mb-2 text-slate-900">Welcome Back</CardTitle>
+                <CardDescription className="uppercase tracking-widest text-[10px] text-slate-500">
                   Access your exclusive portfolio
                 </CardDescription>
               </div>
@@ -76,10 +76,10 @@ export default function MemberLoginPopup() {
               <button 
                 onClick={handleGoogleLogin}
                 disabled={loading}
-                className="w-full h-14 rounded-xl bg-white/5 text-white border border-glass-border hover:bg-white/10 flex items-center justify-center gap-3 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full h-14 rounded-xl bg-white text-slate-800 border border-slate-200 hover:bg-slate-50 shadow-sm flex items-center justify-center gap-3 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (
-                  <span className="text-sm font-bold uppercase tracking-widest text-muted-foreground animate-pulse">Connecting...</span>
+                  <span className="text-sm font-bold uppercase tracking-widest text-slate-400 animate-pulse">Connecting...</span>
                 ) : (
                   <>
                     <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
@@ -90,16 +90,16 @@ export default function MemberLoginPopup() {
               
               <div className="relative mt-8">
                 <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-glass-border"></span>
+                  <span className="w-full border-t border-slate-200"></span>
                 </div>
                 <div className="relative flex justify-center text-[10px] uppercase tracking-widest">
-                  <span className="bg-background px-4 text-muted-foreground">Member Access Only</span>
+                  <span className="bg-white px-4 text-slate-500">Member Access Only</span>
                 </div>
               </div>
               
-              <p className="text-center mt-6 text-[9px] text-muted-foreground font-light leading-relaxed uppercase tracking-widest">
-                By signing in, you agree to Lumina's <br />
-                <span className="underline cursor-pointer hover:text-white transition-colors">Terms of Service</span> and <span className="underline cursor-pointer hover:text-white transition-colors">Privacy Policy</span>.
+              <p className="text-center mt-6 text-[9px] text-slate-500 font-light leading-relaxed uppercase tracking-widest">
+                By signing in, you agree to ZICTA Estate's <br />
+                <span className="underline cursor-pointer hover:text-slate-800 transition-colors">Terms of Service</span> and <span className="underline cursor-pointer hover:text-slate-800 transition-colors">Privacy Policy</span>.
               </p>
             </div>
           </motion.div>

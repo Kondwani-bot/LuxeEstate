@@ -31,21 +31,21 @@ export default function Navbar() {
 
   return (
     <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-      isScrolled || isDashboard ? 'bg-black/20 backdrop-blur-md border-b border-glass-border py-4' : 'bg-transparent py-8'
+      isScrolled || isDashboard ? 'bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm py-4' : 'bg-transparent py-8'
     }`}>
       <div className="container px-4 flex justify-between items-center">
         <Link href="/" className="text-2xl font-extrabold tracking-tighter logo-gradient">
-          LUMINA
+          ZICTA ESTATE
         </Link>
 
         {/* Desktop Nav */}
         <div className="hidden md:flex items-center gap-12">
           <div className="flex gap-8">
             {navLinks.map((link) => (
-              <Link 
+               <Link 
                 key={link.name} 
                 href={link.path} 
-                className="text-sm font-medium text-muted-foreground hover:text-white transition-colors"
+                className={`text-sm font-semibold transition-colors ${isScrolled || isDashboard ? 'text-slate-600 hover:text-sky-600' : 'text-slate-800 hover:text-sky-600 object-outline'}`}
               >
                 {link.name}
               </Link>
@@ -58,7 +58,7 @@ export default function Navbar() {
 
         {/* Mobile Toggle */}
         <button 
-          className="md:hidden text-primary"
+          className="md:hidden text-slate-800"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         >
           {isMobileMenuOpen ? <X /> : <Menu />}
@@ -72,13 +72,13 @@ export default function Navbar() {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="absolute top-full left-0 right-0 bg-background/95 backdrop-blur-xl border-b border-glass-border p-8 md:hidden flex flex-col gap-6 text-center"
+            className="absolute top-full left-0 right-0 bg-white/95 backdrop-blur-xl border-b border-slate-200 shadow-lg p-8 md:hidden flex flex-col gap-6 text-center"
           >
             {navLinks.map((link) => (
               <Link 
                 key={link.name} 
                 href={link.path} 
-                className="text-sm uppercase tracking-widest font-bold text-muted-foreground hover:text-white transition-colors"
+                className="text-sm uppercase tracking-widest font-bold text-slate-600 hover:text-sky-600 transition-colors"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 {link.name}

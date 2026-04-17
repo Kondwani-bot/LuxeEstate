@@ -4,15 +4,15 @@ import AdminLoginPopup from './AdminLoginPopup';
 
 export default function Footer() {
   return (
-    <footer className="py-12 border-t border-glass-border">
+    <footer className="py-12 bg-white border-t border-slate-200">
       <div className="container px-4 flex flex-col md:flex-row justify-between items-center gap-6">
-        <div className="text-sm text-muted-foreground">
-          &copy; 2024 Lumina Real Estate. All rights reserved.
+        <div className="text-sm font-medium text-slate-500">
+          &copy; 2024 ZICTA Estate Portal. All rights reserved.
         </div>
         <div className="flex items-center gap-8">
-          <Link href="#" className="text-sm text-muted-foreground hover:text-white transition-colors">Properties</Link>
-          <Link href="#" className="text-sm text-muted-foreground hover:text-white transition-colors">About</Link>
-          <Link href="#" className="text-sm text-muted-foreground hover:text-white transition-colors">Contact</Link>
+          <Link href="#" className="text-sm font-semibold text-slate-600 hover:text-sky-600 transition-colors">Properties</Link>
+          <Link href="#" className="text-sm font-semibold text-slate-600 hover:text-sky-600 transition-colors">About</Link>
+          <Link href="#" className="text-sm font-semibold text-slate-600 hover:text-sky-600 transition-colors">Contact</Link>
           <AdminLoginPopup />
         </div>
       </div>
