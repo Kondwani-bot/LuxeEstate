@@ -1,6 +1,4 @@
 import Link from 'next/link';
-import { Instagram, Twitter, Facebook, Mail } from 'lucide-react';
-import AdminLoginPopup from './AdminLoginPopup';
 
 export default function Footer() {
   return (
@@ -10,10 +8,9 @@ export default function Footer() {
           &copy; 2024 Luxe Estate Portal. All rights reserved.
         </div>
         <div className="flex items-center gap-8">
-          <Link href="#" className="text-sm font-semibold text-slate-600 hover:text-sky-600 transition-colors">Properties</Link>
-          <Link href="#" className="text-sm font-semibold text-slate-600 hover:text-sky-600 transition-colors">About</Link>
-          <Link href="#" className="text-sm font-semibold text-slate-600 hover:text-sky-600 transition-colors">Contact</Link>
-          <AdminLoginPopup />
+          <Link href="/collections" className="text-sm font-semibold text-slate-600 hover:text-sky-600 transition-colors">Properties</Link>
+          <Link href="/about" className="text-sm font-semibold text-slate-600 hover:text-sky-600 transition-colors">About</Link>
+          <Link href="/contact" className="text-sm font-semibold text-slate-600 hover:text-sky-600 transition-colors">Contact</Link>
         </div>
       </div>
     </footer>
