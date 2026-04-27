@@ -13,8 +13,6 @@ export default function Sidebar({ role }: SidebarProps) {
   const pathname = usePathname();
 
   const memberLinks = [
-    { name: 'My Listings', path: '/dashboard', icon: List },
-    { name: 'Submit Property', path: '/dashboard/submit', icon: PlusCircle },
     { name: 'Inquiries', path: '/dashboard/inquiries', icon: ShieldCheck },
   ];
 
