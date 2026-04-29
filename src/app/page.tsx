@@ -33,7 +33,7 @@ export default function Home() {
 
         if (error) throw error;
         
-        if (data) {
+        if (data && data.length > 0) {
           // Map DB columns to our Property type
           const formattedData: Property[] = data.map(p => ({
             id: p.id,
@@ -50,6 +50,8 @@ export default function Home() {
             features: p.features || []
           }));
           setProperties(formattedData);
+        } else {
+          setProperties(MOCK_PROPERTIES); // Fallback if DB is empty
         }
       } catch (err) {
         console.error('Error fetching properties. Falling back to mock data.', err);
@@ -266,14 +268,26 @@ export default function Home() {
       </section>
 
       {/* Featured Quote */}
-      <section className="py-24 bg-blue-900 text-white text-center px-4 relative overflow-hidden">
+      <section className="py-24 bg-slate-900 text-white text-center px-4 relative overflow-hidden group">
         <div className="absolute inset-0 z-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] mix-blend-overlay"></div>
-        <div className="max-w-4xl mx-auto relative z-10">
-          <span className="text-sky-400 uppercase tracking-[0.3em] font-bold text-sm mb-6 block">Vision & Mission</span>
-          <h2 className="text-3xl md:text-5xl leading-relaxed font-light">
-            "We regulate and promote an <span className="font-semibold text-sky-400">inclusive</span> and sustainable sector, ensuring world-class standards."
+        
+        {/* Star effects */}
+        <div className="absolute top-1/4 left-1/4 w-2 h-2 rounded-full bg-white blur-[1px] opacity-0 group-hover:opacity-100 transition-opacity duration-1000 animate-ping"></div>
+        <div className="absolute top-3/4 left-1/3 w-1 h-1 rounded-full bg-white opacity-0 group-hover:opacity-80 transition-opacity duration-700 animate-ping" style={{ animationDelay: '0.2s' }}></div>
+        <div className="absolute top-1/3 right-1/4 w-1.5 h-1.5 rounded-full bg-sky-300 opacity-0 group-hover:opacity-100 transition-opacity duration-1000 animate-ping" style={{ animationDelay: '0.5s' }}></div>
+        <div className="absolute top-2/3 right-1/3 w-2 h-2 rounded-full bg-sky-200 blur-[1px] opacity-0 group-hover:opacity-60 transition-opacity duration-1000 animate-ping" style={{ animationDelay: '0.8s' }}></div>
+        <div className="absolute bottom-1/4 right-1/2 w-1.5 h-1.5 rounded-full bg-white opacity-0 group-hover:opacity-90 transition-opacity duration-500 animate-ping" style={{ animationDelay: '0.3s' }}></div>
+
+        <motion.div 
+          className="max-w-3xl mx-auto relative z-10 cursor-default"
+          whileHover={{ scale: 1.05 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+        >
+          <span className="text-sky-400 uppercase tracking-[0.3em] font-bold text-[10px] mb-4 block group-hover:text-blue-300 transition-colors duration-500">Vision & Mission</span>
+          <h2 className="text-lg md:text-xl leading-relaxed font-light text-slate-200 group-hover:text-white transition-colors duration-500">
+            "We regulate and promote an <span className="font-semibold text-sky-400 group-hover:text-sky-300 transition-colors">inclusive</span> and sustainable sector, ensuring world-class standards."
           </h2>
-        </div>
+        </motion.div>
       </section>
 
       <Footer />

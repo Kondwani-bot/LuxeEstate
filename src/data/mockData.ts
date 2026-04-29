@@ -65,7 +65,8 @@ export const MOCK_PROPERTIES: Property[] = [
     imageUrl: 'https://images.unsplash.com/photo-1518780664697-55e3ad937233?auto=format&fit=crop&q=80&w=1200',
     images: [
       'https://images.unsplash.com/photo-1518780664697-55e3ad937233?auto=format&fit=crop&q=80&w=1200',
-      'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&q=80&w=1200'
+      'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&q=80&w=1200',
+      'https://images.unsplash.com/photo-1482859454392-1b5326395032?auto=format&fit=crop&q=80&w=1200'
     ],
     type: 'House',
     status: 'Pending',
@@ -82,7 +83,8 @@ export const MOCK_PROPERTIES: Property[] = [
     imageUrl: 'https://images.unsplash.com/photo-1499793983690-e29da59ef1c2?auto=format&fit=crop&q=80&w=1200',
     images: [
       'https://images.unsplash.com/photo-1499793983690-e29da59ef1c2?auto=format&fit=crop&q=80&w=1200',
-      'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&q=80&w=1200'
+      'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&q=80&w=1200',
+      'https://images.unsplash.com/photo-1540541338287-41700207dee6?auto=format&fit=crop&q=80&w=1200'
     ],
     type: 'Villa',
     status: 'Pending',
@@ -98,7 +100,9 @@ export const MOCK_PROPERTIES: Property[] = [
     location: 'Portland, Oregon',
     imageUrl: 'https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?auto=format&fit=crop&q=80&w=1200',
     images: [
-      'https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?auto=format&fit=crop&q=80&w=1200'
+      'https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?auto=format&fit=crop&q=80&w=1200',
+      'https://images.unsplash.com/photo-1542314831-c6a4d14cdac8?auto=format&fit=crop&q=80&w=1200',
+      'https://images.unsplash.com/photo-1449844908441-8829872d2607?auto=format&fit=crop&q=80&w=1200'
     ],
     type: 'House',
     status: 'Approved',
@@ -114,12 +118,32 @@ export const MOCK_PROPERTIES: Property[] = [
     location: 'Manhattan, New York',
     imageUrl: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&q=80&w=1200',
     images: [
-      'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&q=80&w=1200'
+      'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&q=80&w=1200',
+      'https://images.unsplash.com/photo-1502672260266-1c1c28b1e15e?auto=format&fit=crop&q=80&w=1200',
+      'https://images.unsplash.com/photo-1600607686527-6fb886090705?auto=format&fit=crop&q=80&w=1200'
     ],
     type: 'Apartment',
     status: 'Approved',
     submittedBy: 'John Member',
     submittedAt: '2024-03-28',
     features: ['Gym Access', 'Underground Parking', 'Balcony', 'Modern Appliances']
+  },
+  {
+    id: '8',
+    title: 'Desert Oasis Compound',
+    description: 'Luxurious compound in the middle of a private desert reserve. Comes with an artificial oasis pool, tennis courts, and custom sunset viewing decks.',
+    price: 5400000,
+    location: 'Palm Springs, California',
+    imageUrl: 'https://images.unsplash.com/photo-1512915922686-57c11dde9b6b?auto=format&fit=crop&q=80&w=1200',
+    images: [
+      'https://images.unsplash.com/photo-1512915922686-57c11dde9b6b?auto=format&fit=crop&q=80&w=1200',
+      'https://images.unsplash.com/photo-1481026469463-66327c86e544?auto=format&fit=crop&q=80&w=1200',
+      'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&q=80&w=1200'
+    ],
+    type: 'Villa',
+    status: 'Approved',
+    submittedBy: 'Jane Member',
+    submittedAt: '2024-04-02',
+    features: ['Tennis Courts', 'Oasis Pool', 'Viewing Deck', 'Helipad']
   }
 ];
