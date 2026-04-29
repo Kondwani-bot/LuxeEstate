@@ -239,7 +239,12 @@ export default function Home() {
 
         {/* Property Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-20">
-          {filteredProperties.length > 0 ? (
+          {loading ? (
+            <div className="col-span-full py-32 text-center bg-white rounded-3xl border border-slate-100 shadow-sm">
+              <div className="text-2xl font-bold mb-4 text-slate-800 animate-pulse">Loading properties...</div>
+              <p className="text-slate-500">Please wait while we fetch the latest listings.</p>
+            </div>
+          ) : filteredProperties.length > 0 ? (
             filteredProperties.map((property, index) => (
               <motion.div
                 key={property.id}

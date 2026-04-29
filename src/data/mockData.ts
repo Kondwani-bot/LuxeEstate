@@ -44,9 +44,9 @@ export const MOCK_PROPERTIES: Property[] = [
     description: 'Experience the ultimate city lifestyle in this triplex penthouse. Boasting a private rooftop terrace, outdoor kitchen, and 360-degree skyline views.',
     price: 8750000,
     location: 'Manhattan, New York',
-    imageUrl: 'https://images.unsplash.com/photo-1600607687940-4e524cb35a3a?auto=format&fit=crop&q=80&w=1200',
+    imageUrl: 'https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?auto=format&fit=crop&q=80&w=1200',
     images: [
-      'https://images.unsplash.com/photo-1600607687940-4e524cb35a3a?auto=format&fit=crop&q=80&w=1200',
+      'https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?auto=format&fit=crop&q=80&w=1200',
       'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&q=80&w=1200',
       'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=1200'
     ],
