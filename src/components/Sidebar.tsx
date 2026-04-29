@@ -1,6 +1,6 @@
 'use client';
 
-import { LayoutDashboard, PlusCircle, List, LogOut, ShieldCheck, Settings } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, List, LogOut, ShieldCheck, Settings, User } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -24,6 +24,7 @@ function SidebarInner({ role }: SidebarProps) {
   const adminLinks = [
     { name: 'Pending Review', path: '/admin', match: (p: string, param: string | null) => p === '/admin', icon: ShieldCheck },
     { name: 'All Listings', path: '/admin/all', match: (p: string, param: string | null) => p === '/admin/all', icon: List },
+    { name: 'Members', path: '/admin/members', match: (p: string, param: string | null) => p === '/admin/members', icon: User },
     { name: 'Settings', path: '/admin/settings', match: (p: string, param: string | null) => p === '/admin/settings', icon: Settings },
   ];
 

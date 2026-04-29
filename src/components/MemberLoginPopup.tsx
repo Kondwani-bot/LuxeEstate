@@ -13,8 +13,15 @@ export default function MemberLoginPopup() {
   const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isSignUpMode, setIsSignUpMode] = useState(false);
+  
+  // Form fields
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [address, setAddress] = useState('');
+  
   const [authError, setAuthError] = useState('');
   const router = useRouter();
 
@@ -23,20 +30,47 @@ export default function MemberLoginPopup() {
     return () => setMounted(false);
   }, []);
 
-  const handleEmailAuth = async (isSignUp: boolean) => {
+  const handleEmailAuth = async () => {
     try {
       setLoading(true);
       setAuthError('');
       
-      if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
+      if (isSignUpMode) {
+        if (!fullName || !phoneNumber || !address) {
+          throw new Error('Please fill out all fields for registration.');
+        }
+
+        const { data: authData, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/dashboard/inquiries`
+            emailRedirectTo: `${window.location.origin}/dashboard/inquiries`,
+            data: {
+              full_name: fullName,
+              phone: phoneNumber,
+              address: address,
+            }
           }
         });
         if (error) throw error;
+        
+        // Save additional details to the members table
+        if (authData.user) {
+          try {
+            await supabase.from('members').insert([{
+              id: authData.user.id,
+              email: email,
+              full_name: fullName,
+              phone: phoneNumber,
+              address: address,
+              created_at: new Date().toISOString()
+            }]);
+          } catch (insertError) {
+            console.error('Error saving member info', insertError);
+            // Non-blocking error if the table doesn't exist yet
+          }
+        }
+
         setAuthError('Check your email for the confirmation link.');
       } else {
         const { error } = await supabase.auth.signInWithPassword({
@@ -75,22 +109,22 @@ export default function MemberLoginPopup() {
   const modalContent = (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 py-8 overflow-y-auto">
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setIsOpen(false)}
-            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm"
           />
           
           <motion.div
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="relative w-full max-w-md bg-white rounded-3xl overflow-hidden shadow-2xl border border-slate-200"
+            className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl border border-slate-200 my-auto flex flex-col"
           >
-            <div className="bg-slate-50 p-8 text-slate-800 flex items-center gap-4 border-b border-slate-200">
+            <div className="bg-slate-50 p-6 text-slate-800 flex items-center gap-4 border-b border-slate-200 shrink-0 rounded-t-3xl">
               <button 
                 onClick={() => setIsOpen(false)} 
                 className="hover:text-sky-600 transition-colors flex items-center gap-2"
@@ -101,11 +135,13 @@ export default function MemberLoginPopup() {
               <h3 className="text-xl uppercase tracking-widest font-bold">Member Access</h3>
             </div>
 
-            <div className="p-8 space-y-6">
-              <div className="text-center mb-8">
-                <CardTitle className="text-3xl mb-2 text-slate-900">Welcome Back</CardTitle>
+            <div className="p-8 space-y-6 overflow-y-auto">
+              <div className="text-center mb-6">
+                <CardTitle className="text-3xl mb-2 text-slate-900">
+                  {isSignUpMode ? 'Create Account' : 'Welcome Back'}
+                </CardTitle>
                 <CardDescription className="uppercase tracking-widest text-[10px] text-slate-500">
-                  Access your exclusive portfolio
+                  {isSignUpMode ? 'Join our exclusive community' : 'Access your exclusive portfolio'}
                 </CardDescription>
               </div>
 
@@ -116,6 +152,41 @@ export default function MemberLoginPopup() {
               )}
 
               <div className="space-y-4">
+                {isSignUpMode && (
+                  <>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Full Name</label>
+                      <Input 
+                        type="text" 
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        placeholder="John Doe"
+                        className="h-12 bg-slate-50 border-slate-200"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Phone Number</label>
+                      <Input 
+                        type="tel" 
+                        value={phoneNumber}
+                        onChange={(e) => setPhoneNumber(e.target.value)}
+                        placeholder="+1 (555) 000-0000"
+                        className="h-12 bg-slate-50 border-slate-200"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Address</label>
+                      <Input 
+                        type="text" 
+                        value={address}
+                        onChange={(e) => setAddress(e.target.value)}
+                        placeholder="123 Luxury Ave, City"
+                        className="h-12 bg-slate-50 border-slate-200"
+                      />
+                    </div>
+                  </>
+                )}
+
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Email Address</label>
                   <Input 
@@ -137,50 +208,57 @@ export default function MemberLoginPopup() {
                   />
                 </div>
                 
-                <div className="flex gap-4 pt-2">
+                <div className="pt-4 flex flex-col gap-3">
                   <button 
-                    onClick={() => handleEmailAuth(false)}
-                    disabled={loading || !email || !password}
-                    className="flex-1 h-12 rounded-xl bg-sky-600 text-white font-bold uppercase tracking-widest text-xs hover:bg-sky-700 transition disabled:opacity-50"
+                    onClick={handleEmailAuth}
+                    disabled={loading || !email || !password || (isSignUpMode && (!fullName || !phoneNumber || !address))}
+                    className="w-full h-12 rounded-xl bg-sky-600 text-white font-bold uppercase tracking-widest text-xs hover:bg-sky-700 transition disabled:opacity-50"
                   >
-                    Sign In
+                    {isSignUpMode ? 'Sign Up' : 'Sign In'}
                   </button>
+                  
                   <button 
-                    onClick={() => handleEmailAuth(true)}
-                    disabled={loading || !email || !password}
-                    className="flex-1 h-12 rounded-xl bg-white text-slate-800 border border-slate-200 font-bold uppercase tracking-widest text-xs hover:bg-slate-50 transition disabled:opacity-50"
+                    onClick={() => {
+                      setIsSignUpMode(!isSignUpMode);
+                      setAuthError('');
+                    }}
+                    className="w-full text-[10px] text-slate-500 font-bold uppercase tracking-widest hover:text-sky-600 transition"
                   >
-                    Sign Up
+                    {isSignUpMode ? 'Already have an account? Sign In' : 'Need an account? Sign Up'}
                   </button>
                 </div>
               </div>
 
-              <div className="relative mt-8 mb-6">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-slate-200"></span>
-                </div>
-                <div className="relative flex justify-center text-[10px] uppercase tracking-widest">
-                  <span className="bg-white px-4 text-slate-500">Or Continue With</span>
-                </div>
-              </div>
+              {!isSignUpMode && (
+                <>
+                  <div className="relative mt-8 mb-6">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t border-slate-200"></span>
+                    </div>
+                    <div className="relative flex justify-center text-[10px] uppercase tracking-widest">
+                      <span className="bg-white px-4 text-slate-500">Or Continue With</span>
+                    </div>
+                  </div>
 
-              <button 
-                onClick={handleGoogleLogin}
-                disabled={loading}
-                className="w-full h-12 rounded-xl bg-white text-slate-800 border border-slate-200 hover:bg-slate-50 shadow-sm flex items-center justify-center gap-3 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? (
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 animate-pulse">Connecting...</span>
-                ) : (
-                  <>
-                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
-                    <span className="text-xs font-bold uppercase tracking-widest">Google</span>
-                  </>
-                )}
-              </button>
+                  <button 
+                    onClick={handleGoogleLogin}
+                    disabled={loading}
+                    className="w-full h-12 rounded-xl bg-white text-slate-800 border border-slate-200 hover:bg-slate-50 shadow-sm flex items-center justify-center gap-3 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loading ? (
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 animate-pulse">Connecting...</span>
+                    ) : (
+                      <>
+                        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
+                        <span className="text-xs font-bold uppercase tracking-widest">Google</span>
+                      </>
+                    )}
+                  </button>
+                </>
+              )}
               
               <p className="text-center mt-6 text-[9px] text-slate-500 font-light leading-relaxed uppercase tracking-widest">
-                By signing in, you agree to Luxe Estate's <br />
+                By {isSignUpMode ? 'signing up' : 'signing in'}, you agree to Luxe Estate's <br />
                 <span className="underline cursor-pointer hover:text-slate-800 transition-colors">Terms of Service</span> and <span className="underline cursor-pointer hover:text-slate-800 transition-colors">Privacy Policy</span>.
               </p>
             </div>
