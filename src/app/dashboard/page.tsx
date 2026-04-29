@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { motion } from 'motion/react';
 import { Plus, Search, Filter, MoreVertical, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -13,15 +13,21 @@ import PropertyCard from '@/components/PropertyCard';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/lib/supabase';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Property } from '@/types';
 
-export default function MemberDashboard() {
-  const [activeTab, setActiveTab] = useState('listings');
+function DashboardContent() {
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get('tab') === 'submit' ? 'submit' : 'listings';
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [user, setUser] = useState<any>(null);
   const [myListings, setMyListings] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+
+  useEffect(() => {
+    setActiveTab(initialTab);
+  }, [initialTab]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -385,5 +391,13 @@ export default function MemberDashboard() {
         </main>
       </div>
     </div>
+  );
+}
+
+export default function MemberDashboard() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center bg-slate-50 min-h-screen text-slate-500">Loading dashboard...</div>}>
+      <DashboardContent />
+    </Suspense>
   );
 }

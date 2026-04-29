@@ -2,24 +2,29 @@
 
 import { LayoutDashboard, PlusCircle, List, LogOut, ShieldCheck, Settings } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { Suspense } from 'react';
 
 interface SidebarProps {
   role: 'member' | 'admin';
 }
 
-export default function Sidebar({ role }: SidebarProps) {
+function SidebarInner({ role }: SidebarProps) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const currentTab = searchParams.get('tab');
 
   const memberLinks = [
-    { name: 'Inquiries', path: '/dashboard/inquiries', icon: ShieldCheck },
+    { name: 'My Listings', path: '/dashboard', match: (p: string, param: string | null) => p === '/dashboard' && param !== 'submit', icon: List },
+    { name: 'Submit Property', path: '/dashboard?tab=submit', match: (p: string, param: string | null) => p === '/dashboard' && param === 'submit', icon: PlusCircle },
+    { name: 'Inquiries', path: '/dashboard/inquiries', match: (p: string, param: string | null) => p === '/dashboard/inquiries', icon: ShieldCheck },
   ];
 
   const adminLinks = [
-    { name: 'Pending Review', path: '/admin', icon: ShieldCheck },
-    { name: 'All Listings', path: '/admin/all', icon: List },
-    { name: 'Settings', path: '/admin/settings', icon: Settings },
+    { name: 'Pending Review', path: '/admin', match: (p: string, param: string | null) => p === '/admin', icon: ShieldCheck },
+    { name: 'All Listings', path: '/admin/all', match: (p: string, param: string | null) => p === '/admin/all', icon: List },
+    { name: 'Settings', path: '/admin/settings', match: (p: string, param: string | null) => p === '/admin/settings', icon: Settings },
   ];
 
   const links = role === 'member' ? memberLinks : adminLinks;
@@ -34,7 +39,7 @@ export default function Sidebar({ role }: SidebarProps) {
       <nav className="flex-1 px-4 space-y-2">
         {links.map((link) => {
           const Icon = link.icon;
-          const isActive = pathname === link.path;
+          const isActive = link.match(pathname, currentTab);
           return (
             <Link
               key={link.name}
@@ -63,5 +68,13 @@ export default function Sidebar({ role }: SidebarProps) {
         </Link>
       </div>
     </div>
+  );
+}
+
+export default function Sidebar({ role }: SidebarProps) {
+  return (
+    <Suspense fallback={<div className="w-64 h-full bg-white border-r border-slate-200" />}>
+      <SidebarInner role={role} />
+    </Suspense>
   );
 }
