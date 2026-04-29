@@ -33,7 +33,7 @@ export default function Home() {
 
         if (error) throw error;
         
-        if (data && data.length > 0) {
+        if (data) {
           // Map DB columns to our Property type
           const formattedData: Property[] = data.map(p => ({
             id: p.id,
@@ -49,7 +49,12 @@ export default function Home() {
             submittedAt: p.submitted_at,
             features: p.features || []
           }));
-          setProperties(formattedData);
+          
+          // Blend DB data with Mock Data, removing duplicates by title just in case
+          const dbTitles = new Set(formattedData.map(p => p.title));
+          const mockToAdd = MOCK_PROPERTIES.filter(p => !dbTitles.has(p.title) && p.status === 'Approved');
+          
+          setProperties([...formattedData, ...mockToAdd]);
         } else {
           setProperties(MOCK_PROPERTIES); // Fallback if DB is empty
         }

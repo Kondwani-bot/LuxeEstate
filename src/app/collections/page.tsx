@@ -47,7 +47,13 @@ export default function CollectionsPage() {
             submittedAt: p.submitted_at,
             features: p.features || []
           }));
-          setProperties(formattedData);
+          
+          const dbTitles = new Set(formattedData.map(p => p.title));
+          const mockToAdd = MOCK_PROPERTIES.filter(p => !dbTitles.has(p.title) && p.status === 'Approved');
+          
+          setProperties([...formattedData, ...mockToAdd]);
+        } else {
+          setProperties(MOCK_PROPERTIES);
         }
       } catch (err) {
         setProperties(MOCK_PROPERTIES); // Fallback if no backend
