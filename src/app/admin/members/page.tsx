@@ -9,10 +9,17 @@ import Sidebar from '@/components/Sidebar';
 export default function AdminMembers() {
   const [members, setMembers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     fetchMembers();
   }, []);
+
+  const filteredMembers = members.filter(m => 
+    (m.full_name?.toLowerCase().includes(searchQuery.toLowerCase())) || 
+    (m.email?.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (m.address?.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
 
   const fetchMembers = async () => {
     try {
@@ -70,6 +77,8 @@ export default function AdminMembers() {
                 <input 
                   type="text" 
                   placeholder="Search members..." 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 w-full md:w-64 transition-shadow"
                 />
               </div>
@@ -83,11 +92,10 @@ export default function AdminMembers() {
             <div className="overflow-x-auto">
               {loading ? (
                 <div className="p-12 text-center text-slate-500">Loading members...</div>
-              ) : members.length === 0 ? (
+              ) : filteredMembers.length === 0 ? (
                 <div className="p-12 text-center text-slate-500">
                   <User className="w-12 h-12 mx-auto mb-4 text-slate-300" />
-                  <p className="text-lg font-medium text-slate-900">No members found</p>
-                  <p className="text-sm mt-1">There are currently no registered members in the system.</p>
+                  <p className="text-lg font-medium text-slate-900">{searchQuery ? 'No members match your search' : 'No members found'}</p>
                 </div>
               ) : (
                 <table className="w-full text-left border-collapse">
@@ -101,7 +109,7 @@ export default function AdminMembers() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {members.map((member) => (
+                    {filteredMembers.map((member) => (
                       <tr key={member.id} className="hover:bg-slate-50 transition-colors group">
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-4">

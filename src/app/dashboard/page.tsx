@@ -81,7 +81,7 @@ function DashboardContent() {
         const { data, error } = await supabase
           .from('properties')
           .select('*')
-          .eq('submitted_by', user.user_metadata?.full_name || user.email || 'John Member'); 
+          .eq('submitted_by', user.email); 
 
         if (error) throw error;
         if (data) {
@@ -128,6 +128,7 @@ function DashboardContent() {
   const handleMainImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (mainImagePreview) URL.revokeObjectURL(mainImagePreview);
       setMainImagePreview(URL.createObjectURL(file));
     }
   };
@@ -135,6 +136,7 @@ function DashboardContent() {
   const handleSlideshowChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files) {
+      slideshowPreviews.forEach(url => URL.revokeObjectURL(url));
       const newPreviews = Array.from(files).map(file => URL.createObjectURL(file));
       setSlideshowPreviews(newPreviews);
     }
@@ -173,7 +175,7 @@ function DashboardContent() {
     const mainImageFile = formData.get('mainImage') as File;
     const slideshowFiles = formData.getAll('slideshowImages') as File[];
 
-    let finalMainUrl = 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&q=80'; // fallback
+    let finalMainUrl = '';
     const finalSlideshowUrls: string[] = [];
 
     const uploadImage = async (file: File) => {
@@ -182,36 +184,49 @@ function DashboardContent() {
       const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
       const filePath = `properties/${user.id}/${fileName}`;
       
-      const { data, error } = await supabase.storage
-        .from('property-images')
-        .upload(filePath, file);
+      try {
+        const { data, error } = await supabase.storage
+          .from('property-images')
+          .upload(filePath, file);
 
-      if (error) {
-        console.warn('Storage upload failed (bucket might not exist). Using local preview URL.', error);
-        return URL.createObjectURL(file); // Fallback to local URL so UI works instantly
+        if (error) {
+          console.error('Storage upload failed:', error);
+          return null;
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('property-images')
+          .getPublicUrl(filePath);
+          
+        return publicUrl;
+      } catch (err) {
+        return null;
       }
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('property-images')
-        .getPublicUrl(filePath);
-        
-      return publicUrl;
     };
 
     try {
+      // 1. Upload Main Image
       if (mainImageFile && mainImageFile.size > 0) {
         const uploadedMain = await uploadImage(mainImageFile);
-        if (uploadedMain) finalMainUrl = uploadedMain;
+        if (uploadedMain) {
+          finalMainUrl = uploadedMain;
+        } else {
+          throw new Error('Image upload failed. Please ensure your Supabase Storage has a "property-images" bucket and public access policies.');
+        }
+      } else {
+        throw new Error('Main image is required.');
       }
 
+      // 2. Upload Slideshow Images
       for (const file of slideshowFiles) {
         if (file && file.size > 0) {
           const uploaded = await uploadImage(file);
-          if (uploaded) finalSlideshowUrls.push(uploaded);
+          if (uploaded) {
+            finalSlideshowUrls.push(uploaded);
+          }
         }
       }
 
-      // If no slideshow images were selected/uploaded, default to the main image
       if (finalSlideshowUrls.length === 0) {
         finalSlideshowUrls.push(finalMainUrl);
       }
@@ -226,9 +241,9 @@ function DashboardContent() {
             location,
             image_url: finalMainUrl,
             images: finalSlideshowUrls,
-            type: 'House', // Defaulting for simple form
+            type: 'House',
             status: 'Pending',
-            submitted_by: user.user_metadata?.full_name || user.email || 'John Member',
+            submitted_by: user.email,
             features: []
           }
         ])
@@ -236,7 +251,9 @@ function DashboardContent() {
 
       if (error) throw error;
       
-      // Update UI manually using mapped type properties rather than waiting for next poll to load visual
+      setMainImagePreview(null);
+      setSlideshowPreviews([]);
+
       if (data && data.length > 0) {
         const newProperty: Property = {
           id: data[0].id,
@@ -254,11 +271,11 @@ function DashboardContent() {
         };
         setMyListings(prev => [newProperty, ...prev]);
         setActiveTab('listings');
-        (e.target as HTMLFormElement).reset(); // Reset form
+        (e.target as HTMLFormElement).reset();
       }
-    } catch (error) {
-      console.error('Error adding document: ', error);
-      alert('Failed to submit listing. Please try again.');
+    } catch (error: any) {
+      console.error('Error adding property: ', error);
+      alert(error.message || 'Failed to submit listing.');
     } finally {
       setIsSubmitting(false);
     }

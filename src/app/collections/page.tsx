@@ -25,6 +25,7 @@ export default function CollectionsPage() {
   useEffect(() => {
     const fetchProperties = async () => {
       try {
+        setLoading(true);
         const { data, error } = await supabase
           .from('properties')
           .select('*')
@@ -32,31 +33,28 @@ export default function CollectionsPage() {
 
         if (error) throw error;
         
-        if (data) {
-           const formattedData: Property[] = data.map(p => ({
-            id: p.id,
-            title: p.title,
-            description: p.description,
-            price: p.price,
-            location: p.location,
-            imageUrl: p.image_url,
-            images: p.images || [],
-            type: p.type as any,
-            status: p.status as any,
-            submittedBy: p.submitted_by || '',
-            submittedAt: p.submitted_at,
-            features: p.features || []
-          }));
-          
-          const dbTitles = new Set(formattedData.map(p => p.title));
-          const mockToAdd = MOCK_PROPERTIES.filter(p => !dbTitles.has(p.title) && p.status === 'Approved');
-          
-          setProperties([...formattedData, ...mockToAdd]);
-        } else {
-          setProperties(MOCK_PROPERTIES);
-        }
+        const formattedData: Property[] = (data || []).map(p => ({
+          id: p.id,
+          title: p.title,
+          description: p.description,
+          price: p.price,
+          location: p.location,
+          imageUrl: p.image_url,
+          images: p.images || [],
+          type: p.type as any,
+          status: p.status as any,
+          submittedBy: p.submitted_by || '',
+          submittedAt: p.submitted_at,
+          features: p.features || []
+        }));
+        
+        const dbTitles = new Set(formattedData.map(p => p.title.toLowerCase()));
+        const mockToAdd = MOCK_PROPERTIES.filter(p => !dbTitles.has(p.title.toLowerCase()) && p.status === 'Approved');
+        
+        setProperties([...formattedData, ...mockToAdd]);
       } catch (err) {
-        setProperties(MOCK_PROPERTIES); // Fallback if no backend
+        console.error('Error fetching properties:', err);
+        setProperties(MOCK_PROPERTIES.filter(p => p.status === 'Approved'));
       } finally {
         setLoading(false);
       }

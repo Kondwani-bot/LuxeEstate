@@ -59,7 +59,14 @@ export default function AdminDashboard() {
     fetchAdminProperties();
   }, []);
 
-  const pendingProperties = properties.filter(p => p.status === 'Pending');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
+
+  const pendingProperties = properties.filter(p => 
+    p.status === 'Pending' && 
+    (p.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+     p.submittedBy.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
 
   const handleAction = async (id: string, status: 'Approved' | 'Rejected') => {
     try {
@@ -70,6 +77,7 @@ export default function AdminDashboard() {
         
       if (error) throw error;
       setProperties(prev => prev.map(p => p.id === id ? { ...p, status } : p));
+      if (selectedProperty?.id === id) setSelectedProperty(null);
     } catch (err) {
       console.error('Failed to update status', err);
     }
@@ -92,7 +100,55 @@ export default function AdminDashboard() {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-8">
+        <main className="flex-1 overflow-y-auto p-8 relative">
+          {/* Detailed Image Review Modal/Overlay */}
+          {selectedProperty && (
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="bg-white rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
+              >
+                <div className="p-8 border-b border-slate-100 flex justify-between items-center sticky top-0 bg-white z-10">
+                  <div>
+                    <h2 className="text-2xl font-bold text-slate-900">{selectedProperty.title}</h2>
+                    <p className="text-sm text-slate-500">{selectedProperty.location}</p>
+                  </div>
+                  <button onClick={() => setSelectedProperty(null)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+                <div className="p-8 space-y-8">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {selectedProperty.images.map((img, i) => (
+                      <div key={i} className="aspect-[4/3] rounded-xl overflow-hidden border border-slate-200">
+                        <img src={img} alt="" className="w-full h-full object-cover" />
+                      </div>
+                    ))}
+                  </div>
+                  <div className="bg-slate-50 p-6 rounded-2xl">
+                    <h3 className="font-bold mb-2 uppercase tracking-widest text-[10px] text-slate-500">Description</h3>
+                    <p className="text-slate-700 leading-relaxed text-sm">{selectedProperty.description}</p>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                    <button 
+                      onClick={() => handleAction(selectedProperty.id, 'Approved')}
+                      className="flex-1 h-14 bg-green-600 text-white font-bold uppercase tracking-widest text-[10px] rounded-xl hover:bg-green-700 transition-all flex items-center justify-center gap-2"
+                    >
+                      <Check className="w-4 h-4" /> Approve Listing
+                    </button>
+                    <button 
+                      onClick={() => handleAction(selectedProperty.id, 'Rejected')}
+                      className="flex-1 h-14 bg-red-600 text-white font-bold uppercase tracking-widest text-[10px] rounded-xl hover:bg-red-700 transition-all flex items-center justify-center gap-2"
+                    >
+                      <X className="w-4 h-4" /> Reject Listing
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          )}
+
           <div className="mb-12">
             <div className="flex justify-between items-end mb-8">
               <div>
@@ -102,7 +158,12 @@ export default function AdminDashboard() {
               <div className="flex gap-4">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <Input placeholder="Search submissions..." className="pl-10 h-10 rounded-xl border-slate-200 bg-white w-64 shadow-sm focus-visible:ring-sky-500" />
+                  <Input 
+                    placeholder="Search submissions..." 
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10 h-10 rounded-xl border-slate-200 bg-white w-64 shadow-sm focus-visible:ring-sky-500" 
+                  />
                 </div>
               </div>
             </div>
@@ -111,18 +172,18 @@ export default function AdminDashboard() {
               <Table>
                 <TableHeader className="bg-slate-50">
                   <TableRow className="border-slate-200">
-                    <TableHead className="uppercase tracking-widest text-[10px] py-6 text-slate-500 font-bold">Property</TableHead>
+                    <TableHead className="uppercase tracking-widest text-[10px] py-6 text-slate-500 font-bold px-8">Property</TableHead>
                     <TableHead className="uppercase tracking-widest text-[10px] text-slate-500 font-bold">Location</TableHead>
                     <TableHead className="uppercase tracking-widest text-[10px] text-slate-500 font-bold">Price</TableHead>
                     <TableHead className="uppercase tracking-widest text-[10px] text-slate-500 font-bold">Submitted By</TableHead>
-                    <TableHead className="uppercase tracking-widest text-[10px] text-right text-slate-500 font-bold">Actions</TableHead>
+                    <TableHead className="uppercase tracking-widest text-[10px] text-right text-slate-500 font-bold px-8">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {pendingProperties.length > 0 ? (
                     pendingProperties.map((property) => (
                       <TableRow key={property.id} className="border-slate-100 hover:bg-slate-50 transition-colors">
-                        <TableCell className="py-4">
+                        <TableCell className="py-4 px-8">
                           <div className="flex items-center gap-4">
                             <img src={property.imageUrl} alt="" className="w-12 h-12 object-cover rounded-lg border border-slate-200" />
                             <div className="font-bold text-slate-800">{property.title}</div>
@@ -134,9 +195,12 @@ export default function AdminDashboard() {
                           <div className="text-sm font-semibold text-slate-700">{property.submittedBy}</div>
                           <div className="text-[10px] text-slate-400 font-medium">{new Date(property.submittedAt).toLocaleDateString()}</div>
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-right px-8">
                           <div className="flex justify-end gap-2">
-                            <button className="p-2 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors">
+                            <button 
+                              onClick={() => setSelectedProperty(property)}
+                              className="p-2 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors"
+                            >
                               <Eye className="w-4 h-4" />
                             </button>
                             <button 
@@ -158,7 +222,7 @@ export default function AdminDashboard() {
                   ) : (
                     <TableRow>
                       <TableCell colSpan={5} className="text-center py-16 text-slate-500 font-medium">
-                        No pending submissions at this time.
+                        {searchQuery ? "No matching submissions found." : "No pending submissions at this time."}
                       </TableCell>
                     </TableRow>
                   )}
