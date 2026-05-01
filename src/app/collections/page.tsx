@@ -19,7 +19,7 @@ export default function CollectionsPage() {
   const [filterType, setFilterType] = useState('All');
   const [filterMinPrice, setFilterMinPrice] = useState('');
   const [filterMaxPrice, setFilterMaxPrice] = useState('');
-  const [sortBy, setSortBy] = useState('newest');
+  const [sortBy, setSortBy] = useState('price-low');
   const [showFilters, setShowFilters] = useState(true);
 
   useEffect(() => {
@@ -125,9 +125,9 @@ export default function CollectionsPage() {
                 onChange={(e) => setSortBy(e.target.value)}
                 className="appearance-none bg-white border border-slate-200 shadow-sm rounded-xl px-4 py-2 pr-10 text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all cursor-pointer h-10"
               >
-                <option value="newest">Newest First</option>
                 <option value="price-low">Price: Low to High</option>
                 <option value="price-high">Price: High to Low</option>
+                <option value="newest">Newest First</option>
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
             </div>

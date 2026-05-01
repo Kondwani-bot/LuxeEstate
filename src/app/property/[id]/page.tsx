@@ -154,7 +154,7 @@ export default function PropertyDetails({ params }: { params: Promise<{ id: stri
           </div>
 
           {/* Image Gallery */}
-          <div className="mb-12">
+          <div className="mb-12 max-w-4xl mx-auto">
             <Gallery images={property.images} />
           </div>
 
