@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Search, User, Filter, MoreVertical, Mail, Phone, MapPin } from 'lucide-react';
+import { Search, User, Filter, MoreVertical, Mail, Phone, MapPin, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import Sidebar from '@/components/Sidebar';
 
@@ -31,6 +31,23 @@ export default function AdminMembers() {
       console.error('Error fetching members:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteMember = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to remove member "${name}"? This will not delete their authentication account but will remove them from this panel.`)) return;
+    
+    try {
+      const { error } = await supabase
+        .from('members')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      setMembers(prev => prev.filter(m => m.id !== id));
+    } catch (err) {
+      console.error('Error deleting member:', err);
+      alert('Failed to delete member.');
     }
   };
 
@@ -118,8 +135,12 @@ export default function AdminMembers() {
                           {new Date(member.created_at).toLocaleDateString()}
                         </td>
                         <td className="px-6 py-4 text-right">
-                          <button className="p-2 hover:bg-slate-200 rounded-full text-slate-400 transition-colors opacity-0 group-hover:opacity-100">
-                            <MoreVertical className="w-4 h-4" />
+                          <button 
+                            onClick={() => handleDeleteMember(member.id, member.full_name || member.email)}
+                            className="p-2 hover:bg-red-50 rounded-lg text-red-400 hover:text-red-600 transition-colors opacity-0 group-hover:opacity-100"
+                            title="Remove Member"
+                          >
+                            <X className="w-4 h-4" />
                           </button>
                         </td>
                       </tr>

@@ -23,6 +23,8 @@ function DashboardContent() {
   const [user, setUser] = useState<any>(null);
   const [myListings, setMyListings] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
+  const [mainImagePreview, setMainImagePreview] = useState<string | null>(null);
+  const [slideshowPreviews, setSlideshowPreviews] = useState<string[]>([]);
   const router = useRouter();
 
   useEffect(() => {
@@ -33,6 +35,7 @@ function DashboardContent() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         setUser(session.user);
+        syncMember(session.user);
       }
     });
 
@@ -41,6 +44,7 @@ function DashboardContent() {
     } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         setUser(session.user);
+        syncMember(session.user);
       } else {
         setUser(null);
       }
@@ -49,6 +53,27 @@ function DashboardContent() {
     return () => subscription.unsubscribe();
   }, []);
 
+  const syncMember = async (authUser: any) => {
+    try {
+      const { data: existing } = await supabase
+        .from('members')
+        .select('id')
+        .eq('id', authUser.id)
+        .single();
+      
+      if (!existing) {
+        await supabase.from('members').insert({
+          id: authUser.id,
+          email: authUser.email,
+          full_name: authUser.user_metadata?.full_name || authUser.email?.split('@')[0],
+          created_at: new Date().toISOString()
+        });
+      }
+    } catch (err) {
+      console.error('Error syncing member data', err);
+    }
+  };
+
   useEffect(() => {
     const fetchUserProperties = async () => {
       if (!user) return;
@@ -56,7 +81,7 @@ function DashboardContent() {
         const { data, error } = await supabase
           .from('properties')
           .select('*')
-          .eq('submitted_by', user.user_metadata?.full_name || 'John Member'); // Temporarily matching mock data logic until full real auth names are configured
+          .eq('submitted_by', user.user_metadata?.full_name || user.email || 'John Member'); 
 
         if (error) throw error;
         if (data) {
@@ -98,6 +123,38 @@ function DashboardContent() {
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     router.push('/');
+  };
+
+  const handleMainImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setMainImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleSlideshowChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files) {
+      const newPreviews = Array.from(files).map(file => URL.createObjectURL(file));
+      setSlideshowPreviews(newPreviews);
+    }
+  };
+
+  const handleDeleteProperty = async (id: string) => {
+    if (!confirm('Are you sure you want to remove this listing? It will no longer be visible on the site.')) return;
+    
+    try {
+      const { error } = await supabase
+        .from('properties')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      setMyListings(prev => prev.filter(p => p.id !== id));
+    } catch (err) {
+      console.error('Error deleting property:', err);
+      alert('Failed to delete property.');
+    }
   };
 
   const handlePropertySubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -171,7 +228,7 @@ function DashboardContent() {
             images: finalSlideshowUrls,
             type: 'House', // Defaulting for simple form
             status: 'Pending',
-            submitted_by: user.user_metadata?.full_name || 'John Member',
+            submitted_by: user.user_metadata?.full_name || user.email || 'John Member',
             features: []
           }
         ])
@@ -207,7 +264,7 @@ function DashboardContent() {
     }
   };
 
-  const displayName = user?.user_metadata?.full_name || 'John Member';
+  const displayName = user?.user_metadata?.full_name || user?.email || 'John Member';
   const displayInitials = displayName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
 
   return (
@@ -301,6 +358,14 @@ function DashboardContent() {
                       transition={{ delay: i * 0.05 }}
                     >
                       <PropertyCard property={property} />
+                      <div className="mt-4 flex justify-end">
+                        <button 
+                          onClick={() => handleDeleteProperty(property.id)}
+                          className="text-xs font-bold text-red-500 uppercase tracking-widest hover:text-red-700 transition-colors py-2 px-4 bg-red-50 rounded-lg hover:bg-red-100"
+                        >
+                          Remove Listing
+                        </button>
+                      </div>
                     </motion.div>
                   ))}
                 </div>
@@ -353,15 +418,66 @@ function DashboardContent() {
                       <Input name="location" required placeholder="e.g. Lusaka, Zambia" className="bg-white border border-slate-200 rounded-xl px-4 h-12 focus-visible:ring-sky-500 text-slate-900 shadow-sm" />
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                      <div className="space-y-2 border-2 border-dashed border-slate-200 p-6 rounded-2xl bg-slate-50 hover:bg-slate-100 transition-colors text-center relative">
-                        <Label className="uppercase tracking-widest text-[10px] text-sky-600 font-bold cursor-pointer inline-block mt-2">Upload Main Image</Label>
-                        <p className="text-xs text-slate-400 mt-1">Select a featured cover photo (JPG/PNG)</p>
-                        <Input type="file" name="mainImage" accept="image/*" required className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                      <div className="space-y-4">
+                        <div className="border-2 border-dashed border-slate-200 p-6 rounded-2xl bg-slate-50 hover:bg-slate-100 transition-colors text-center relative group min-h-[140px] flex flex-col items-center justify-center">
+                          {mainImagePreview ? (
+                            <div className="relative w-full h-32 mb-2">
+                              <img src={mainImagePreview} alt="Preview" className="w-full h-full object-cover rounded-lg" />
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-lg">
+                                <span className="text-[10px] text-white font-bold uppercase tracking-widest">Change Photo</span>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <Label className="uppercase tracking-widest text-[10px] text-sky-600 font-bold cursor-pointer inline-block mt-2">Upload Main Image</Label>
+                              <p className="text-xs text-slate-400 mt-1">Select a featured cover photo (JPG/PNG)</p>
+                            </>
+                          )}
+                          <Input 
+                            type="file" 
+                            name="mainImage" 
+                            accept="image/*" 
+                            required 
+                            onChange={handleMainImageChange}
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
+                          />
+                        </div>
                       </div>
-                      <div className="space-y-2 border-2 border-dashed border-slate-200 p-6 rounded-2xl bg-slate-50 hover:bg-slate-100 transition-colors text-center relative">
-                        <Label className="uppercase tracking-widest text-[10px] text-sky-600 font-bold cursor-pointer inline-block mt-2">Upload Slideshow Photos</Label>
-                        <p className="text-xs text-slate-400 mt-1">Select multiple high-res interior photos</p>
-                        <Input type="file" name="slideshowImages" multiple accept="image/*" required className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                      
+                      <div className="space-y-4">
+                        <div className="border-2 border-dashed border-slate-200 p-6 rounded-2xl bg-slate-50 hover:bg-slate-100 transition-colors text-center relative group min-h-[140px] flex flex-col items-center justify-center">
+                          {slideshowPreviews.length > 0 ? (
+                            <div className="grid grid-cols-3 gap-2 w-full mb-2">
+                              {slideshowPreviews.slice(0, 3).map((src, i) => (
+                                <div key={i} className="relative h-12">
+                                  <img src={src} alt="" className="w-full h-full object-cover rounded-md" />
+                                  {i === 2 && slideshowPreviews.length > 3 && (
+                                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center rounded-md text-[10px] text-white font-bold">
+                                      +{slideshowPreviews.length - 3}
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                              <div className="col-span-3 absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-lg">
+                                <span className="text-[10px] text-white font-bold uppercase tracking-widest">Add/Change Photos</span>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <Label className="uppercase tracking-widest text-[10px] text-sky-600 font-bold cursor-pointer inline-block mt-2">Upload Slideshow Photos</Label>
+                              <p className="text-xs text-slate-400 mt-1">Select multiple high-res interior photos</p>
+                            </>
+                          )}
+                          <Input 
+                            type="file" 
+                            name="slideshowImages" 
+                            multiple 
+                            accept="image/*" 
+                            required 
+                            onChange={handleSlideshowChange}
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>

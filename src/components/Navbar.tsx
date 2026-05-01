@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { Menu, X, User, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'motion/react';
+import { supabase } from '@/lib/supabase';
 
 import MemberLoginPopup from './MemberLoginPopup';
 
@@ -22,6 +23,36 @@ export default function Navbar() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  useEffect(() => {
+    supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        syncMember(session.user);
+      }
+    });
+  }, []);
+
+  const syncMember = async (authUser: any) => {
+    try {
+      const { data: existing } = await supabase
+        .from('members')
+        .select('id')
+        .eq('id', authUser.id)
+        .single();
+      
+      if (!existing) {
+        await supabase.from('members').insert({
+          id: authUser.id,
+          email: authUser.email,
+          full_name: authUser.user_metadata?.full_name || authUser.email?.split('@')[0],
+          created_at: new Date().toISOString()
+        });
+      }
+    } catch (err) {
+      // Just fail silently for background sync
+      console.warn('Member sync failed', err);
+    }
+  };
 
   const navLinks = [
     { name: 'Collection', path: '/collections' },
