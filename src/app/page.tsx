@@ -90,7 +90,7 @@ export default function Home() {
         if (sortBy === 'newest') return new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime();
         return 0;
       });
-  }, [searchQuery, filterLocation, filterType, filterMinPrice, filterMaxPrice, sortBy]);
+  }, [properties, searchQuery, filterLocation, filterType, filterMinPrice, filterMaxPrice, sortBy]);
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900">
@@ -159,19 +159,26 @@ export default function Home() {
             <Filter className="w-4 h-4 text-sky-500" /> {showFilters ? 'Hide Filters' : 'Advanced Filters'}
           </button>
 
-          <div className="flex items-center gap-4">
-            <span className="text-xs font-bold uppercase tracking-widest text-slate-500">Sort By:</span>
-            <div className="relative group">
-              <select 
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="appearance-none bg-white border border-slate-200 shadow-sm rounded-xl px-6 py-3 pr-12 text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all cursor-pointer"
-              >
-                <option value="price-low">Price: Low to High</option>
-                <option value="price-high">Price: High to Low</option>
-                <option value="newest">Newest First</option>
-              </select>
-              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+          <div className="flex flex-col md:flex-row items-center gap-6">
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Sort By</span>
+            <div className="flex bg-white p-1 rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+              {[
+                { id: 'newest', label: 'Newest First' },
+                { id: 'price-low', label: 'Price: Low-High' },
+                { id: 'price-high', label: 'Price: High-Low' }
+              ].map((option) => (
+                <button
+                  key={option.id}
+                  onClick={() => setSortBy(option.id)}
+                  className={`px-4 py-2 text-[10px] font-bold uppercase tracking-widest rounded-lg transition-all ${
+                    sortBy === option.id 
+                      ? 'bg-sky-600 text-white shadow-md' 
+                      : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
             </div>
           </div>
         </div>

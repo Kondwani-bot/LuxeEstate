@@ -109,8 +109,8 @@ export default function CollectionsPage() {
             <Filter className="w-4 h-4 text-sky-500" /> {showFilters ? 'Hide Filters' : 'Advanced Filters'}
           </button>
 
-          <div className="flex items-center gap-4">
-            <div className="relative flex-1 md:w-64">
+          <div className="flex flex-col md:flex-row items-center gap-4">
+            <div className="relative w-full md:w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <Input 
                  placeholder="Search name or area..." 
@@ -119,17 +119,25 @@ export default function CollectionsPage() {
                  onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <div className="relative group hidden sm:block">
-              <select 
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="appearance-none bg-white border border-slate-200 shadow-sm rounded-xl px-4 py-2 pr-10 text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all cursor-pointer h-10"
-              >
-                <option value="price-low">Price: Low to High</option>
-                <option value="price-high">Price: High to Low</option>
-                <option value="newest">Newest First</option>
-              </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+            
+            <div className="flex bg-white p-1 rounded-xl border border-slate-200 shadow-sm overflow-hidden h-10 items-center">
+              {[
+                { id: 'newest', label: 'Newest' },
+                { id: 'price-low', label: 'Price: Low-High' },
+                { id: 'price-high', label: 'Price: High-Low' }
+              ].map((option) => (
+                <button
+                  key={option.id}
+                  onClick={() => setSortBy(option.id)}
+                  className={`px-3 py-1.5 text-[9px] font-bold uppercase tracking-widest rounded-lg transition-all h-full flex items-center ${
+                    sortBy === option.id 
+                      ? 'bg-sky-600 text-white shadow-sm' 
+                      : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
             </div>
           </div>
         </div>
