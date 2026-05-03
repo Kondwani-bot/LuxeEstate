@@ -76,7 +76,7 @@ export default function PropertyDetails({ params }: { params: Promise<{ id: stri
     const data = {
       property_id: property?.id,
       property_title: property?.title,
-      owner_name: property?.submittedBy, // Important to route to the correct member
+      owner_email: property?.submittedBy, // matches against user.email in dashboard
       type: inquiryType,
       name: formData.get('name'),
       email: formData.get('email'),

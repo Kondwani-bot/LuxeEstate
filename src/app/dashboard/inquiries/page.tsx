@@ -4,13 +4,15 @@ import React, { useState, useEffect } from 'react';
 import Sidebar from '@/components/Sidebar';
 import { supabase } from '@/lib/supabase';
 import { MOCK_PROPERTIES } from '@/data/mockData';
-import { MapPin, Calendar, Mail, Phone, MessageSquare } from 'lucide-react';
+import { MapPin, Calendar, Mail, Phone, MessageSquare, Trash2, ExternalLink } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import Link from 'next/link';
 
 export default function MemberInquiries() {
   const [inquiries, setInquiries] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -32,25 +34,33 @@ export default function MemberInquiries() {
     const fetchInquiries = async () => {
       if (!user) return;
       try {
-        const username = user.user_metadata?.full_name || 'John Member';
+        const userEmail = user.email;
         
         // Supabase query to get inquiries sent to this member's properties
+        // We use owner_email now for consistency
         const { data, error } = await supabase
           .from('inquiries')
           .select('*')
-          .eq('owner_name', username)
+          .eq('owner_email', userEmail)
           .order('created_at', { ascending: false });
 
-        if (error) throw error;
+        if (error) {
+          // If the table doesn't exist yet, we'll see an error here
+          if (error.code === 'PGRST116' || error.message.includes('relation "inquiries" does not exist')) {
+            throw new Error('Table inquiries does not exist');
+          }
+          throw error;
+        }
         
         if (data && data.length > 0) {
           setInquiries(data);
         } else {
-          // If no data, populate with mock so UI showcases the feature layout successfully
-          createMockInquiries();
+          // No real inquiries found
+          setInquiries([]);
         }
       } catch (err) {
-        console.warn('Error fetching inquiries, possibly missing table. Applying mock data.', err);
+        console.warn('Error fetching inquiries:', err);
+        // Fallback to mock for testing if no table or error
         createMockInquiries();
       } finally {
         setLoading(false);
@@ -89,7 +99,32 @@ export default function MemberInquiries() {
     }
   }, [user]);
 
-  const displayName = user?.user_metadata?.full_name || 'John Member';
+  const handleDeleteInquiry = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this inquiry?')) return;
+    
+    setIsDeleting(id);
+    try {
+      const { error } = await supabase
+        .from('inquiries')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      setInquiries(prev => prev.filter(inq => inq.id !== id));
+    } catch (err: any) {
+      console.error('Error deleting inquiry:', err);
+      // If it's a mock inquiry, just remove it from local state
+      if (typeof id === 'number' || id.length < 5) {
+        setInquiries(prev => prev.filter(inq => inq.id !== id));
+      } else {
+        alert('Failed to delete inquiry from database.');
+      }
+    } finally {
+      setIsDeleting(null);
+    }
+  };
+
+  const displayName = user?.user_metadata?.full_name || user?.email || 'John Member';
 
   return (
     <div className="flex h-screen bg-slate-50 text-slate-900">
@@ -170,8 +205,19 @@ export default function MemberInquiries() {
                     </div>
 
                     <div className="mt-6 flex gap-3">
-                       <button className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all shadow-sm">
-                         Reply via Email
+                       <a 
+                         href={`mailto:${inq.email}?subject=Regarding your inquiry for ${inq.property_title}`}
+                         className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-2"
+                       >
+                         Reply via Email <ExternalLink className="w-3 h-3" />
+                       </a>
+                       <button 
+                         onClick={() => handleDeleteInquiry(inq.id)}
+                         disabled={isDeleting === inq.id}
+                         className="p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                         title="Archive Inquiry"
+                       >
+                         <Trash2 className={`w-5 h-5 ${isDeleting === inq.id ? 'animate-pulse' : ''}`} />
                        </button>
                     </div>
                   </div>

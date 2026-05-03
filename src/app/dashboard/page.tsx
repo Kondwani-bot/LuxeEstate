@@ -84,8 +84,9 @@ function DashboardContent() {
           .eq('submitted_by', user.email); 
 
         if (error) throw error;
+        let fetchedData: Property[] = [];
         if (data) {
-          formattedData = data.map(p => ({
+          fetchedData = data.map(p => ({
             id: p.id,
             title: p.title,
             description: p.description,
@@ -103,10 +104,10 @@ function DashboardContent() {
 
         // If the user has zero real properties, show some "Demo" mock properties
         // but mark them so the user isn't confused.
-        if (formattedData.length === 0) {
+        if (fetchedData.length === 0) {
           setMyListings(MOCK_PROPERTIES.filter(p => p.submittedBy === 'John Member').map(p => ({ ...p, isMock: true })));
         } else {
-          setMyListings(formattedData);
+          setMyListings(fetchedData);
         }
       } catch (err) {
         console.error('Error fetching user properties', err);

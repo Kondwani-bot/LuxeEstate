@@ -1,0 +1,71 @@
+{
+  "entities": {
+    "properties": {
+      "title": "Property",
+      "description": "A real estate listing",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "price": { "type": "number" },
+        "location": { "type": "string" },
+        "image_url": { "type": "string" },
+        "images": { "type": "array" },
+        "type": { "type": "string" },
+        "status": { "type": "string" },
+        "submitted_by": { "type": "string" },
+        "submitted_at": { "type": "string", "format": "date-time" },
+        "features": { "type": "array" }
+      },
+      "required": ["title", "price", "location", "image_url", "submitted_by"]
+    },
+    "inquiries": {
+      "title": "Buyer Inquiry",
+      "description": "A message from a potential buyer to a property owner",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "property_id": { "type": "string" },
+        "property_title": { "type": "string" },
+        "owner_email": { "type": "string" },
+        "type": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "message": { "type": "string" },
+        "date": { "type": "string" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["property_id", "owner_email", "name", "email", "message"]
+    },
+    "members": {
+      "title": "Member",
+      "description": "A registered user who can list properties",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "email": { "type": "string" },
+        "full_name": { "type": "string" },
+        "phone": { "type": "string" },
+        "address": { "type": "string" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["email"]
+    }
+  },
+  "firestore": {
+    "properties": {
+      "schema": "properties",
+      "description": "Collection of all property listings"
+    },
+    "inquiries": {
+      "schema": "inquiries",
+      "description": "Collection of buyer messages"
+    },
+    "members": {
+      "schema": "members",
+      "description": "Collection of registered member profiles"
+    }
+  }
+}

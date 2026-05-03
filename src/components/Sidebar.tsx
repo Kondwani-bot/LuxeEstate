@@ -1,6 +1,6 @@
 'use client';
 
-import { LayoutDashboard, PlusCircle, List, LogOut, ShieldCheck, Settings, User } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, List, LogOut, ShieldCheck, Settings, User, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -17,8 +17,8 @@ function SidebarInner({ role }: SidebarProps) {
 
   const memberLinks = [
     { name: 'My Listings', path: '/dashboard', match: (p: string, param: string | null) => p === '/dashboard' && param !== 'submit', icon: List },
+    { name: 'Inquiries', path: '/dashboard/inquiries', match: (p: string, param: string | null) => p === '/dashboard/inquiries', icon: MessageSquare },
     { name: 'Submit Property', path: '/dashboard?tab=submit', match: (p: string, param: string | null) => p === '/dashboard' && param === 'submit', icon: PlusCircle },
-    { name: 'Inquiries', path: '/dashboard/inquiries', match: (p: string, param: string | null) => p === '/dashboard/inquiries', icon: ShieldCheck },
   ];
 
   const adminLinks = [

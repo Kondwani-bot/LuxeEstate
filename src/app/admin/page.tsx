@@ -103,8 +103,7 @@ export default function AdminDashboard() {
       if (error) throw error;
       
       if (!data || data.length === 0) {
-        alert('Update failed: Property not found in database.');
-        return;
+        throw new Error('Update failed: Database rejected the update. Please ensure you have run the RLS policies SQL in your Supabase dashboard.');
       }
 
       setProperties(prev => prev.map(p => p.id === id ? { ...p, status } : p));
