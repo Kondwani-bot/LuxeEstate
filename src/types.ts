@@ -15,6 +15,7 @@ export interface Property {
   submittedBy: string;
   submittedAt: string;
   features: string[];
+  isMock?: boolean;
 }
 
 export interface User {

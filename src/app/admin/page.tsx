@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Check, X, Eye, Search, Filter } from 'lucide-react';
+import { Check, X, Eye, Search, Filter, RefreshCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -23,39 +23,48 @@ export default function AdminDashboard() {
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchAdminProperties = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('properties')
-          .select('*');
+  const fetchAdminProperties = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('properties')
+        .select('*')
+        .order('submitted_at', { ascending: false });
 
-        if (error) throw error;
-        if (data) {
-          const formattedData: Property[] = data.map(p => ({
-            id: p.id,
-            title: p.title,
-            description: p.description,
-            price: p.price,
-            location: p.location,
-            imageUrl: p.image_url,
-            images: p.images || [],
-            type: p.type as any,
-            status: p.status as any,
-            submittedBy: p.submitted_by || '',
-            submittedAt: p.submitted_at,
-            features: p.features || []
-          }));
-          setProperties(formattedData);
-        }
-      } catch (err) {
-        console.error('Error fetching admin properties', err);
-        setProperties(MOCK_PROPERTIES);
-      } finally {
-        setLoading(false);
+      if (error) throw error;
+      
+      let formattedData: Property[] = [];
+      if (data) {
+        formattedData = data.map(p => ({
+          id: p.id,
+          title: p.title,
+          description: p.description,
+          price: p.price,
+          location: p.location,
+          imageUrl: p.image_url,
+          images: p.images || [],
+          type: p.type as any,
+          status: p.status as any,
+          submittedBy: p.submitted_by || '',
+          submittedAt: p.submitted_at,
+          features: p.features || []
+        }));
       }
-    };
 
+      if (formattedData.length === 0) {
+        setProperties(MOCK_PROPERTIES.map(p => ({ ...p, isMock: true })));
+      } else {
+        setProperties(formattedData);
+      }
+    } catch (err) {
+      console.error('Error fetching admin properties', err);
+      setProperties(MOCK_PROPERTIES.map(p => ({ ...p, isMock: true })));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchAdminProperties();
   }, []);
 
@@ -76,7 +85,14 @@ export default function AdminDashboard() {
   };
 
   const handleAction = async (id: string, status: 'Approved' | 'Rejected') => {
+    const propertyToUpdate = properties.find(p => p.id === id);
+    
     try {
+      if (propertyToUpdate?.isMock) {
+        alert('This is a SAMPLE property (not in your database) and cannot be approved. Please review a REAL submission from a member.');
+        return;
+      }
+
       console.log(`Updating property ${id} to status: ${status}`);
       const { data, error } = await supabase
         .from('properties')
@@ -87,7 +103,7 @@ export default function AdminDashboard() {
       if (error) throw error;
       
       if (!data || data.length === 0) {
-        alert('Update failed: Property not found in database. This might be a mock listing.');
+        alert('Update failed: Property not found in database.');
         return;
       }
 
@@ -108,6 +124,13 @@ export default function AdminDashboard() {
         <header className="h-20 border-b border-slate-200 bg-white/80 backdrop-blur-md flex items-center justify-between px-8 shadow-sm z-10 shrink-0">
           <h1 className="text-2xl font-bold tracking-tight text-slate-800">Admin Console</h1>
           <div className="flex items-center gap-4">
+            <button 
+              onClick={fetchAdminProperties} 
+              className="p-2 text-slate-400 hover:text-sky-600 transition-colors"
+              title="Refresh Data"
+            >
+              <RefreshCcw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+            </button>
             <Badge variant="outline" className="rounded-lg border border-red-200 text-red-600 bg-red-50 px-3 py-1 text-[10px] font-bold shadow-sm">
               {stats.pending} Pending Reviews
             </Badge>
@@ -220,7 +243,12 @@ export default function AdminDashboard() {
                         <TableCell className="py-4 px-8">
                           <div className="flex items-center gap-4">
                             <img src={property.imageUrl} alt="" className="w-12 h-12 object-cover rounded-lg border border-slate-200 whitespace-nowrap" />
-                            <div className="font-bold text-slate-800 line-clamp-1">{property.title}</div>
+                            <div className="flex flex-col">
+                              <div className="font-bold text-slate-800 line-clamp-1">{property.title}</div>
+                              {property.isMock && (
+                                <span className="text-[8px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded uppercase font-bold tracking-tighter w-fit mt-1">Sample Data</span>
+                              )}
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell className="text-slate-600 font-medium text-sm whitespace-nowrap">{property.location}</TableCell>

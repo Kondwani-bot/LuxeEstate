@@ -49,7 +49,9 @@ export default function CollectionsPage() {
         }));
         
         const dbTitles = new Set(formattedData.map(p => p.title.toLowerCase()));
-        const mockToAdd = MOCK_PROPERTIES.filter(p => !dbTitles.has(p.title.toLowerCase()) && p.status === 'Approved');
+        const mockToAdd = MOCK_PROPERTIES
+          .filter(p => !dbTitles.has(p.title.toLowerCase()) && p.status === 'Approved')
+          .map(p => ({ ...p, isMock: true }));
         
         setProperties([...formattedData, ...mockToAdd]);
       } catch (err) {

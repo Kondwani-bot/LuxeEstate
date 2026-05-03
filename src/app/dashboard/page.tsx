@@ -85,7 +85,7 @@ function DashboardContent() {
 
         if (error) throw error;
         if (data) {
-          const formattedData: Property[] = data.map(p => ({
+          formattedData = data.map(p => ({
             id: p.id,
             title: p.title,
             description: p.description,
@@ -99,6 +99,13 @@ function DashboardContent() {
             submittedAt: p.submitted_at,
             features: p.features || []
           }));
+        }
+
+        // If the user has zero real properties, show some "Demo" mock properties
+        // but mark them so the user isn't confused.
+        if (formattedData.length === 0) {
+          setMyListings(MOCK_PROPERTIES.filter(p => p.submittedBy === 'John Member').map(p => ({ ...p, isMock: true })));
+        } else {
           setMyListings(formattedData);
         }
       } catch (err) {
