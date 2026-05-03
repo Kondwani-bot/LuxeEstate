@@ -61,25 +61,42 @@ export default function AdminDashboard() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
+  const [activeTab, setActiveTab] = useState<'Pending' | 'Approved' | 'Rejected'>('Pending');
 
-  const pendingProperties = properties.filter(p => 
-    p.status === 'Pending' && 
+  const filteredByStatusProperties = properties.filter(p => 
+    p.status === activeTab && 
     (p.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
      p.submittedBy.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
+  const stats = {
+    pending: properties.filter(p => p.status === 'Pending').length,
+    approved: properties.filter(p => p.status === 'Approved').length,
+    rejected: properties.filter(p => p.status === 'Rejected').length,
+  };
+
   const handleAction = async (id: string, status: 'Approved' | 'Rejected') => {
     try {
-      const { error } = await supabase
+      console.log(`Updating property ${id} to status: ${status}`);
+      const { data, error } = await supabase
         .from('properties')
         .update({ status })
-        .eq('id', id);
+        .eq('id', id)
+        .select();
         
       if (error) throw error;
+      
+      if (!data || data.length === 0) {
+        alert('Update failed: Property not found in database. This might be a mock listing.');
+        return;
+      }
+
       setProperties(prev => prev.map(p => p.id === id ? { ...p, status } : p));
       if (selectedProperty?.id === id) setSelectedProperty(null);
-    } catch (err) {
+      alert(`Property ${status.toLowerCase()} successfully!`);
+    } catch (err: any) {
       console.error('Failed to update status', err);
+      alert(`Error: ${err.message || 'Failed to update status'}`);
     }
   };
 
@@ -92,7 +109,7 @@ export default function AdminDashboard() {
           <h1 className="text-2xl font-bold tracking-tight text-slate-800">Admin Console</h1>
           <div className="flex items-center gap-4">
             <Badge variant="outline" className="rounded-lg border border-red-200 text-red-600 bg-red-50 px-3 py-1 text-[10px] font-bold shadow-sm">
-              {pendingProperties.length} Pending Reviews
+              {stats.pending} Pending Reviews
             </Badge>
             <div className="w-10 h-10 rounded-xl bg-blue-100 border border-blue-200 text-blue-700 flex items-center justify-center font-bold shadow-sm">
               AD
@@ -135,13 +152,13 @@ export default function AdminDashboard() {
                       onClick={() => handleAction(selectedProperty.id, 'Approved')}
                       className="flex-1 h-14 bg-green-600 text-white font-bold uppercase tracking-widest text-[10px] rounded-xl hover:bg-green-700 transition-all flex items-center justify-center gap-2"
                     >
-                      <Check className="w-4 h-4" /> Approve Listing
+                      <Check className="w-4 h-4" /> {selectedProperty.status === 'Approved' ? 'Already Approved' : 'Approve Listing'}
                     </button>
                     <button 
                       onClick={() => handleAction(selectedProperty.id, 'Rejected')}
                       className="flex-1 h-14 bg-red-600 text-white font-bold uppercase tracking-widest text-[10px] rounded-xl hover:bg-red-700 transition-all flex items-center justify-center gap-2"
                     >
-                      <X className="w-4 h-4" /> Reject Listing
+                      <X className="w-4 h-4" /> {selectedProperty.status === 'Rejected' ? 'Already Rejected' : 'Reject Listing'}
                     </button>
                   </div>
                 </div>
@@ -150,22 +167,39 @@ export default function AdminDashboard() {
           )}
 
           <div className="mb-12">
-            <div className="flex justify-between items-end mb-8">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-8">
               <div>
-                <h2 className="text-3xl font-bold mb-2 text-slate-900">Pending Approvals</h2>
-                <p className="text-slate-500 text-sm">Review and manage new property submissions.</p>
+                <h2 className="text-3xl font-bold mb-2 text-slate-900">Property Management</h2>
+                <p className="text-slate-500 text-sm">Review, approve, or reject property submissions.</p>
               </div>
-              <div className="flex gap-4">
-                <div className="relative">
+              <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+                <div className="relative flex-1 sm:flex-none">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <Input 
                     placeholder="Search submissions..." 
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 h-10 rounded-xl border-slate-200 bg-white w-64 shadow-sm focus-visible:ring-sky-500" 
+                    className="pl-10 h-11 rounded-xl border-slate-200 bg-white w-full sm:w-64 shadow-sm focus-visible:ring-sky-500" 
                   />
                 </div>
               </div>
+            </div>
+
+            <div className="flex border-b border-slate-200 mb-8 gap-8 overflow-x-auto pb-px">
+              {(['Pending', 'Approved', 'Rejected'] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`pb-4 text-xs font-bold uppercase tracking-[0.2em] transition-all relative ${
+                    activeTab === tab ? 'text-sky-600' : 'text-slate-400 hover:text-slate-600'
+                  }`}
+                >
+                  {tab} ({tab === 'Pending' ? stats.pending : tab === 'Approved' ? stats.approved : stats.rejected})
+                  {activeTab === tab && (
+                    <motion.div layoutId="activeAdminTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-sky-600" />
+                  )}
+                </button>
+              ))}
             </div>
 
             <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
@@ -180,19 +214,19 @@ export default function AdminDashboard() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {pendingProperties.length > 0 ? (
-                    pendingProperties.map((property) => (
+                  {filteredByStatusProperties.length > 0 ? (
+                    filteredByStatusProperties.map((property) => (
                       <TableRow key={property.id} className="border-slate-100 hover:bg-slate-50 transition-colors">
                         <TableCell className="py-4 px-8">
                           <div className="flex items-center gap-4">
-                            <img src={property.imageUrl} alt="" className="w-12 h-12 object-cover rounded-lg border border-slate-200" />
-                            <div className="font-bold text-slate-800">{property.title}</div>
+                            <img src={property.imageUrl} alt="" className="w-12 h-12 object-cover rounded-lg border border-slate-200 whitespace-nowrap" />
+                            <div className="font-bold text-slate-800 line-clamp-1">{property.title}</div>
                           </div>
                         </TableCell>
-                        <TableCell className="text-slate-600 font-medium text-sm">{property.location}</TableCell>
-                        <TableCell className="font-bold text-sky-600">K{property.price.toLocaleString()}</TableCell>
+                        <TableCell className="text-slate-600 font-medium text-sm whitespace-nowrap">{property.location}</TableCell>
+                        <TableCell className="font-bold text-sky-600 whitespace-nowrap">K{property.price.toLocaleString()}</TableCell>
                         <TableCell>
-                          <div className="text-sm font-semibold text-slate-700">{property.submittedBy}</div>
+                          <div className="text-sm font-semibold text-slate-700 truncate max-w-[150px]">{property.submittedBy}</div>
                           <div className="text-[10px] text-slate-400 font-medium">{new Date(property.submittedAt).toLocaleDateString()}</div>
                         </TableCell>
                         <TableCell className="text-right px-8">
@@ -200,21 +234,28 @@ export default function AdminDashboard() {
                             <button 
                               onClick={() => setSelectedProperty(property)}
                               className="p-2 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors"
+                              title="View Details"
                             >
                               <Eye className="w-4 h-4" />
                             </button>
-                            <button 
-                              onClick={() => handleAction(property.id, 'Approved')}
-                              className="p-2 border border-slate-200 rounded-lg text-green-600 hover:bg-green-50 hover:border-green-200 transition-colors"
-                            >
-                              <Check className="w-4 h-4" />
-                            </button>
-                            <button 
-                              onClick={() => handleAction(property.id, 'Rejected')}
-                              className="p-2 border border-slate-200 rounded-lg text-red-600 hover:bg-red-50 hover:border-red-200 transition-colors"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
+                            {property.status !== 'Approved' && (
+                              <button 
+                                onClick={() => handleAction(property.id, 'Approved')}
+                                className="p-2 border border-slate-200 rounded-lg text-green-600 hover:bg-green-50 hover:border-green-200 transition-colors"
+                                title="Approve"
+                              >
+                                <Check className="w-4 h-4" />
+                              </button>
+                            )}
+                            {property.status !== 'Rejected' && (
+                              <button 
+                                onClick={() => handleAction(property.id, 'Rejected')}
+                                className="p-2 border border-slate-200 rounded-lg text-red-600 hover:bg-red-50 hover:border-red-200 transition-colors"
+                                title="Reject"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>
@@ -222,7 +263,7 @@ export default function AdminDashboard() {
                   ) : (
                     <TableRow>
                       <TableCell colSpan={5} className="text-center py-16 text-slate-500 font-medium">
-                        {searchQuery ? "No matching submissions found." : "No pending submissions at this time."}
+                        {searchQuery ? "No matching submissions found." : `No ${activeTab.toLowerCase()} properties at this time.`}
                       </TableCell>
                     </TableRow>
                   )}
