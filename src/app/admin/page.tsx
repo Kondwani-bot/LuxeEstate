@@ -139,12 +139,17 @@ export default function AdminDashboard() {
         return;
       }
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('properties')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .select();
       
       if (error) throw error;
+      
+      if (!data || data.length === 0) {
+        throw new Error('Deletion failed: The database rejected the request. Please ensure you have run the "Delete" RLS Policy SQL in your Supabase dashboard.');
+      }
       
       setProperties(prev => prev.filter(p => p.id !== id));
       if (selectedProperty?.id === id) setSelectedProperty(null);

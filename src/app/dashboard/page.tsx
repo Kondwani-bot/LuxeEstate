@@ -102,10 +102,15 @@ function DashboardContent() {
           }));
         }
 
+        const deletedMockIds = JSON.parse(localStorage.getItem('deletedMockIds') || '[]');
+        
         // If the user has zero real properties, show some "Demo" mock properties
         // but mark them so the user isn't confused.
         if (fetchedData.length === 0) {
-          setMyListings(MOCK_PROPERTIES.filter(p => p.submittedBy === 'John Member').map(p => ({ ...p, isMock: true })));
+          setMyListings(MOCK_PROPERTIES
+            .filter(p => p.submittedBy === 'John Member' && !deletedMockIds.includes(p.id))
+            .map(p => ({ ...p, isMock: true }))
+          );
         } else {
           setMyListings(fetchedData);
         }
@@ -156,20 +161,30 @@ function DashboardContent() {
     
     try {
       if (propertyToDel?.isMock) {
+        const deletedMockIds = JSON.parse(localStorage.getItem('deletedMockIds') || '[]');
+        deletedMockIds.push(id);
+        localStorage.setItem('deletedMockIds', JSON.stringify(deletedMockIds));
+        
         setMyListings(prev => prev.filter(p => p.id !== id));
         return;
       }
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('properties')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .select();
       
       if (error) throw error;
+
+      if (!data || data.length === 0) {
+        throw new Error('Deletion failed: The database rejected the request. Please ensure you have run the "Delete" RLS Policy SQL in your Supabase dashboard.');
+      }
+
       setMyListings(prev => prev.filter(p => p.id !== id));
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error deleting property:', err);
-      alert('Failed to delete property from database.');
+      alert(err.message || 'Failed to delete property from database.');
     }
   };
 

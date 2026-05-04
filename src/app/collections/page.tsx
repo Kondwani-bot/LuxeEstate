@@ -48,9 +48,10 @@ export default function CollectionsPage() {
           features: p.features || []
         }));
         
+        const deletedMockIds = JSON.parse(localStorage.getItem('deletedMockIds') || '[]');
         const dbTitles = new Set(formattedData.map(p => p.title.toLowerCase()));
         const mockToAdd = MOCK_PROPERTIES
-          .filter(p => !dbTitles.has(p.title.toLowerCase()) && p.status === 'Approved')
+          .filter(p => !dbTitles.has(p.title.toLowerCase()) && p.status === 'Approved' && !deletedMockIds.includes(p.id))
           .map(p => ({ ...p, isMock: true }));
         
         setProperties([...formattedData, ...mockToAdd]);
