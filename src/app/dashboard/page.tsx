@@ -319,8 +319,8 @@ function DashboardContent() {
       <Sidebar role="member" />
       
       <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="h-20 border-b border-slate-200 bg-white/80 backdrop-blur-md flex items-center justify-between px-8 shrink-0 shadow-sm z-10">
-          <div>
+        <header className="h-auto py-8 border-b border-slate-200 bg-white/80 backdrop-blur-md flex flex-col items-center justify-center px-8 shrink-0 shadow-sm z-10 text-center gap-4 sm:flex-row sm:justify-between">
+          <div className="flex flex-col items-center sm:items-start">
             <h1 className="text-xl font-bold tracking-tight text-slate-800">Member Dashboard</h1>
             <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500">Manage your property portfolio</p>
           </div>

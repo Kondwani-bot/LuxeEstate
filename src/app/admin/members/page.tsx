@@ -65,21 +65,21 @@ export default function AdminMembers() {
       <main className="flex-1 overflow-y-auto">
         <div className="max-w-7xl mx-auto p-8 lg:p-12">
           
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
+          <div className="flex flex-col items-center text-center gap-6 mb-12">
             <div>
               <h1 className="text-3xl font-bold tracking-tight text-slate-900 mb-2">Members</h1>
               <p className="text-slate-500 text-sm">Manage registered members and property listers.</p>
             </div>
             
-            <div className="flex items-center gap-4">
-              <div className="relative">
+            <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
+              <div className="relative w-full sm:w-64">
                 <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input 
                   type="text" 
                   placeholder="Search members..." 
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 w-full md:w-64 transition-shadow"
+                  className="pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 w-full transition-shadow"
                 />
               </div>
               <button className="p-3 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-600 transition-colors">

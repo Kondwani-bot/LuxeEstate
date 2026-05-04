@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Check, X, Eye, Search, Filter, RefreshCcw, Trash2 } from 'lucide-react';
+import { Check, X, Eye, Search, Filter, RefreshCcw, Trash2, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -193,16 +193,19 @@ export default function AdminDashboard() {
                 animate={{ opacity: 1, scale: 1 }}
                 className="bg-white rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
               >
-                <div className="p-8 border-b border-slate-100 flex justify-between items-center sticky top-0 bg-white z-10">
-                  <div>
+                <div className="p-8 border-b border-slate-100 flex justify-between items-start sticky top-0 bg-white z-10">
+                  <div className="flex-1 text-center pr-8">
                     <h2 className="text-2xl font-bold text-slate-900">{selectedProperty.title}</h2>
-                    <p className="text-sm text-slate-500">{selectedProperty.location}</p>
+                    <p className="text-sm text-slate-500 flex items-center justify-center gap-1">
+                      <MapPin className="w-4 h-4 text-sky-500" />
+                      {selectedProperty.location}
+                    </p>
                   </div>
-                  <button onClick={() => setSelectedProperty(null)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                  <button onClick={() => setSelectedProperty(null)} className="p-2 hover:bg-slate-100 rounded-full transition-colors shrink-0">
                     <X className="w-6 h-6" />
                   </button>
                 </div>
-                <div className="p-8 space-y-8">
+                <div className="p-8 space-y-8 text-center">
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     {selectedProperty.images.map((img, i) => (
                       <div key={i} className="aspect-[4/3] rounded-xl overflow-hidden border border-slate-200">
@@ -210,11 +213,11 @@ export default function AdminDashboard() {
                       </div>
                     ))}
                   </div>
-                  <div className="bg-slate-50 p-6 rounded-2xl">
+                  <div className="bg-slate-50 p-6 rounded-2xl inline-block w-full">
                     <h3 className="font-bold mb-2 uppercase tracking-widest text-[10px] text-slate-500">Description</h3>
-                    <p className="text-slate-700 leading-relaxed text-sm">{selectedProperty.description}</p>
+                    <p className="text-slate-700 leading-relaxed text-sm max-w-2xl mx-auto">{selectedProperty.description}</p>
                   </div>
-                  <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                  <div className="flex flex-col sm:flex-row gap-4 pt-4 max-w-xl mx-auto">
                     <button 
                       onClick={() => handleAction(selectedProperty.id, 'Approved')}
                       className="flex-1 h-14 bg-green-600 text-white font-bold uppercase tracking-widest text-[10px] rounded-xl hover:bg-green-700 transition-all flex items-center justify-center gap-2"
@@ -234,7 +237,7 @@ export default function AdminDashboard() {
           )}
 
           <div className="mb-12">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-8">
+            <div className="flex flex-col items-center text-center gap-6 mb-8">
               <div>
                 <h2 className="text-3xl font-bold mb-2 text-slate-900">Property Management</h2>
                 <p className="text-slate-500 text-sm">Review, approve, or reject property submissions.</p>

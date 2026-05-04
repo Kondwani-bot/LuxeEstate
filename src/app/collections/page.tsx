@@ -94,9 +94,9 @@ export default function CollectionsPage() {
       <Navbar />
       
       <section className="pt-40 pb-12 px-4 bg-white border-b border-slate-200">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-4 text-center">
           <h1 className="text-4xl font-extrabold mb-4 tracking-tight text-slate-900">Property Collections</h1>
-          <p className="text-slate-500 font-medium">Browse our full catalog of premium and verified real estate listings.</p>
+          <p className="text-slate-500 font-medium max-w-2xl mx-auto">Browse our full catalog of premium and verified real estate listings.</p>
         </div>
       </section>
 
