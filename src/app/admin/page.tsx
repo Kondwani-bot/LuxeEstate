@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Check, X, Eye, Search, Filter, RefreshCcw } from 'lucide-react';
+import { Check, X, Eye, Search, Filter, RefreshCcw, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -112,6 +112,33 @@ export default function AdminDashboard() {
     } catch (err: any) {
       console.error('Failed to update status', err);
       alert(`Error: ${err.message || 'Failed to update status'}`);
+    }
+  };
+
+  const handleDeleteProperty = async (id: string) => {
+    const propertyToDelete = properties.find(p => p.id === id);
+    
+    if (!confirm(`Are you sure you want to permanently DELETE "${propertyToDelete?.title}"? This action cannot be undone.`)) return;
+    
+    try {
+      if (propertyToDelete?.isMock) {
+        setProperties(prev => prev.filter(p => p.id !== id));
+        return;
+      }
+
+      const { error } = await supabase
+        .from('properties')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      setProperties(prev => prev.filter(p => p.id !== id));
+      if (selectedProperty?.id === id) setSelectedProperty(null);
+      alert('Property deleted successfully.');
+    } catch (err: any) {
+      console.error('Failed to delete property', err);
+      alert(`Error: ${err.message || 'Failed to delete property'}`);
     }
   };
 
@@ -283,6 +310,13 @@ export default function AdminDashboard() {
                                 <X className="w-4 h-4" />
                               </button>
                             )}
+                            <button 
+                              onClick={() => handleDeleteProperty(property.id)}
+                              className="p-2 border border-slate-200 rounded-lg text-slate-400 hover:text-red-700 hover:bg-red-50 hover:border-red-200 transition-colors"
+                              title="Delete Permanently"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
                           </div>
                         </TableCell>
                       </TableRow>

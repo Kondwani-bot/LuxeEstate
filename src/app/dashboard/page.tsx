@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import { motion } from 'motion/react';
-import { Plus, Search, Filter, MoreVertical, LogOut } from 'lucide-react';
+import { Plus, Search, Filter, MoreVertical, LogOut, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -151,9 +151,15 @@ function DashboardContent() {
   };
 
   const handleDeleteProperty = async (id: string) => {
-    if (!confirm('Are you sure you want to remove this listing? It will no longer be visible on the site.')) return;
+    const propertyToDel = myListings.find(p => p.id === id);
+    if (!confirm(`Are you sure you want to remove "${propertyToDel?.title}"? This action cannot be undone.`)) return;
     
     try {
+      if (propertyToDel?.isMock) {
+        setMyListings(prev => prev.filter(p => p.id !== id));
+        return;
+      }
+
       const { error } = await supabase
         .from('properties')
         .delete()
@@ -163,7 +169,7 @@ function DashboardContent() {
       setMyListings(prev => prev.filter(p => p.id !== id));
     } catch (err) {
       console.error('Error deleting property:', err);
-      alert('Failed to delete property.');
+      alert('Failed to delete property from database.');
     }
   };
 
@@ -386,9 +392,9 @@ function DashboardContent() {
                       <div className="mt-4 flex justify-end">
                         <button 
                           onClick={() => handleDeleteProperty(property.id)}
-                          className="text-xs font-bold text-red-500 uppercase tracking-widest hover:text-red-700 transition-colors py-2 px-4 bg-red-50 rounded-lg hover:bg-red-100"
+                          className="text-[10px] font-bold text-red-500 uppercase tracking-widest hover:text-red-700 transition-all py-2 px-4 bg-white border border-red-100 rounded-xl hover:bg-red-50 flex items-center gap-2 shadow-sm"
                         >
-                          Remove Listing
+                          <Trash2 className="w-3.5 h-3.5" /> Remove Listing
                         </button>
                       </div>
                     </motion.div>
