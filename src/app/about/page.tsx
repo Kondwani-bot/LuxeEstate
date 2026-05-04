@@ -73,7 +73,7 @@ export default function AboutPage() {
          <div className="absolute inset-0 z-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] mix-blend-overlay"></div>
          <div className="max-w-4xl mx-auto relative z-10">
            <span className="text-sky-400 uppercase tracking-[0.3em] font-bold text-sm mb-6 block">Our Vision</span>
-           <h2 className="text-3xl md:text-5xl leading-relaxed font-light">
+           <h2 className="text-3xl md:text-5xl leading-relaxed font-light text-white">
              "To be the authoritative hub for exclusive real estate, where <span className="font-semibold text-sky-400">trust</span> meets luxury."
            </h2>
          </div>
