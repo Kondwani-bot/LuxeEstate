@@ -209,7 +209,7 @@ export default function PropertyDetails({ params }: { params: Promise<{ id: stri
                 <div className="space-y-4 mb-10 flex flex-col items-center">
                   <div className="w-20 h-20 rounded-3xl bg-slate-100 overflow-hidden border border-slate-200 shadow-inner relative">
                     <Image 
-                      src={`https://api.dicebear.com/7.x/notionists/svg?seed=${property.submittedBy || 'Felix'}`} 
+                      src={`https://api.dicebear.com/7.x/personas/svg?seed=${property.submittedBy || 'Felix'}`} 
                       alt="Agent" 
                       fill 
                       className="object-cover"

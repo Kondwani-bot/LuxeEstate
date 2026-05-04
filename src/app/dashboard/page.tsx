@@ -332,7 +332,7 @@ function DashboardContent() {
             </div>
             <div className="w-10 h-10 rounded-xl bg-slate-100 overflow-hidden border border-slate-200 shadow-sm relative">
               <Image 
-                src={`https://api.dicebear.com/7.x/notionists/svg?seed=${displayName || 'Felix'}`} 
+                src={`https://api.dicebear.com/7.x/personas/svg?seed=${displayName || 'Felix'}`} 
                 alt={displayName} 
                 fill
                 className="object-cover"

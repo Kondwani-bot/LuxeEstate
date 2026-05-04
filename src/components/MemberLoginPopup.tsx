@@ -277,7 +277,7 @@ export default function MemberLoginPopup() {
       >
         <div className="w-7 h-7 rounded-full bg-white/20 border border-white/30 flex items-center justify-center overflow-hidden relative shadow-inner">
           <Image 
-            src="https://api.dicebear.com/7.x/notionists/svg?seed=Felix" 
+            src="https://api.dicebear.com/7.x/personas/svg?seed=Felix" 
             alt="User" 
             fill 
             className="object-cover"

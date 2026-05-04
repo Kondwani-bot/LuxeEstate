@@ -53,6 +53,7 @@ export default function PropertyCard({ property }: PropertyCardProps) {
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               referrerPolicy="no-referrer"
               priority={false}
+              quality={90}
             />
           </motion.div>
         </AnimatePresence>

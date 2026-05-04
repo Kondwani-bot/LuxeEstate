@@ -210,7 +210,7 @@ export default function AdminDashboard() {
                     <div className="flex items-center justify-center gap-4 mb-8 pb-8 border-b border-slate-50">
                       <div className="w-12 h-12 rounded-xl bg-slate-100 overflow-hidden border border-slate-200 relative shrink-0">
                         <Image 
-                          src={`https://api.dicebear.com/7.x/notionists/svg?seed=${selectedProperty.submittedBy || 'Felix'}`} 
+                          src={`https://api.dicebear.com/7.x/personas/svg?seed=${selectedProperty.submittedBy || 'Felix'}`} 
                           alt="Submitter" 
                           fill
                           className="object-cover"
@@ -312,6 +312,7 @@ export default function AdminDashboard() {
                                 fill 
                                 className="object-cover rounded-lg border border-slate-200" 
                                 sizes="48px"
+                                quality={90}
                               />
                             </div>
                             <div className="flex flex-col">

@@ -9,8 +9,10 @@ import { MOCK_PROPERTIES } from '@/data/mockData';
 import PropertyCard from '@/components/PropertyCard';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import OnboardingPopup from '@/components/OnboardingPopup';
 import { supabase } from '@/lib/supabase';
 import { Property } from '@/types';
+import Link from 'next/link';
 
 export default function Home() {
   const [properties, setProperties] = useState<Property[]>([]);
@@ -93,6 +95,7 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900">
       <Navbar />
+      <OnboardingPopup />
       
       {/* Hero Section */}
       <section className="relative pt-48 pb-32 px-4 text-center overflow-hidden">
@@ -243,14 +246,14 @@ export default function Home() {
         )}
 
         {/* Property Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-20">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-12">
           {loading ? (
             <div className="col-span-full py-32 text-center bg-white rounded-3xl border border-slate-100 shadow-sm">
               <div className="text-2xl font-bold mb-4 text-slate-800 animate-pulse">Loading properties...</div>
               <p className="text-slate-500">Please wait while we fetch the latest listings.</p>
             </div>
           ) : filteredProperties.length > 0 ? (
-            filteredProperties.map((property, index) => (
+            filteredProperties.slice(0, 6).map((property, index) => (
               <motion.div
                 key={property.id}
                 initial={{ opacity: 0, y: 30 }}
@@ -280,6 +283,17 @@ export default function Home() {
             </div>
           )}
         </div>
+
+        {filteredProperties.length > 6 && (
+          <div className="flex justify-center pb-20">
+            <Link href="/collections">
+              <button className="px-10 py-4 bg-white border border-slate-200 rounded-2xl font-bold text-slate-800 hover:bg-slate-50 transition-all shadow-sm flex items-center gap-3 group">
+                View All {filteredProperties.length} Properties
+                <ChevronDown className="w-4 h-4 text-sky-500 group-hover:translate-y-1 transition-transform" />
+              </button>
+            </Link>
+          </div>
+        )}
       </section>
 
       {/* Featured Quote */}
@@ -298,8 +312,8 @@ export default function Home() {
           whileHover={{ scale: 1.05 }}
           transition={{ duration: 0.4, ease: "easeOut" }}
         >
-          <span className="text-sky-400 uppercase tracking-[0.3em] font-bold text-[10px] mb-4 block group-hover:text-blue-300 transition-colors duration-500">Vision & Mission</span>
-          <h2 className="text-lg md:text-xl leading-relaxed font-light text-slate-200 group-hover:text-white transition-colors duration-500">
+          <span className="text-sky-400 uppercase tracking-[0.3em] font-bold text-[10px] mb-4 block group-hover:text-sky-300 transition-colors duration-500">Vision & Mission</span>
+          <h2 className="text-lg md:text-xl leading-relaxed font-light text-white group-hover:text-sky-100 transition-colors duration-500">
             "We regulate and promote an <span className="font-semibold text-sky-400 group-hover:text-sky-300 transition-colors">inclusive</span> and sustainable sector, ensuring world-class standards."
           </h2>
         </motion.div>

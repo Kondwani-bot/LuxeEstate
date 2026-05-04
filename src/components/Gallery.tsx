@@ -53,6 +53,7 @@ export default function Gallery({ images }: GalleryProps) {
               className="object-cover"
               sizes="(max-width: 1200px) 100vw, 1200px"
               referrerPolicy="no-referrer"
+              quality={95}
             />
           </motion.div>
         </AnimatePresence>
@@ -91,6 +92,7 @@ export default function Gallery({ images }: GalleryProps) {
                   fill
                   className="object-contain rounded-xl"
                   referrerPolicy="no-referrer"
+                  quality={100}
                 />
               </div>
             </DialogContent>
