@@ -128,9 +128,9 @@ export default function PropertyDetails({ params }: { params: Promise<{ id: stri
       <Navbar />
       
       <main className="flex-1 pt-24 relative">
-        <div className="container px-4 py-8">
+        <div className="container mx-auto px-4 py-8">
           {/* Breadcrumbs & Actions */}
-          <div className="flex justify-between items-center mb-8">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
             <Link href="/" className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-slate-500 hover:text-sky-600 transition-colors">
               <ArrowLeft className="w-4 h-4" /> Back to Collection
             </Link>
@@ -160,37 +160,37 @@ export default function PropertyDetails({ params }: { params: Promise<{ id: stri
 
           {/* Content */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-16">
-            <div className="lg:col-span-2">
-              <div className="flex justify-between items-start mb-6">
-                <div>
+            <div className="lg:col-span-2 text-center md:text-left flex flex-col items-center md:items-start">
+              <div className="flex flex-col md:flex-row justify-between items-center md:items-start mb-6 w-full gap-4">
+                <div className="flex flex-col items-center md:items-start">
                   <h1 className="text-4xl md:text-5xl font-bold mb-2 text-slate-900">{property.title}</h1>
                   <div className="flex items-center gap-2 text-slate-500 font-medium">
                     <MapPin className="w-4 h-4 text-sky-500" /> {property.location}
                   </div>
                 </div>
-                <div className="text-right">
+                <div className="text-center md:text-right">
                   <div className="text-3xl font-bold text-sky-600 mb-1">K{property.price.toLocaleString()}</div>
                   <Badge variant="outline" className="rounded-lg border-none bg-green-100 text-green-700 uppercase tracking-widest px-3 py-1 text-[10px] font-bold">Approved</Badge>
                 </div>
               </div>
 
-              <div className="h-px bg-slate-200 my-8"></div>
+              <div className="h-px bg-slate-200 my-8 w-full"></div>
 
-              <div className="mb-12">
-                <div className="flex items-center gap-4 mb-6">
+              <div className="mb-12 w-full">
+                <div className="flex items-center justify-center md:justify-start gap-4 mb-6">
                   <div className="px-4 py-2 rounded-xl bg-slate-100 border border-slate-200 text-xs font-bold uppercase tracking-widest text-slate-700">
                     {property.type}
                   </div>
                 </div>
                 <h3 className="text-xl font-bold uppercase tracking-widest mb-4 text-slate-800">Description</h3>
-                <p className="text-slate-600 leading-relaxed font-medium">
+                <p className="text-slate-600 leading-relaxed font-medium max-w-2xl">
                   {property.description}
                 </p>
               </div>
 
-              <div className="mb-12">
+              <div className="mb-12 w-full">
                 <h3 className="text-xl font-bold uppercase tracking-widest mb-6 text-slate-800">Features & Amenities</h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-y-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-y-4 max-w-xl mx-auto md:mx-0">
                   {property.features.map((feature, i) => (
                     <div key={i} className="flex items-center gap-3">
                       <div className="w-5 h-5 rounded-full bg-sky-100 flex items-center justify-center">
@@ -267,44 +267,44 @@ export default function PropertyDetails({ params }: { params: Promise<{ id: stri
                   </div>
                 ) : (
                   <>
-                    <h3 className="text-2xl font-bold text-slate-900 mb-2">
+                    <h3 className="text-2xl font-bold text-slate-900 mb-2 text-center">
                       {inquiryType === 'viewing' ? 'Request Private Viewing' : 'Contact Agent'}
                     </h3>
-                    <p className="text-slate-500 text-sm mb-6 pb-6 border-b border-slate-100">
+                    <p className="text-slate-500 text-sm mb-6 pb-6 border-b border-slate-100 text-center">
                       Leave your details below and the listing agent for <strong>{property.title}</strong> will reach out to accommodate you.
                     </p>
 
-                    <form className="space-y-4" onSubmit={submitInquiry}>
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Full Name</label>
-                        <Input name="name" required placeholder="John Doe" className="h-12 bg-slate-50" />
+                  <form className="space-y-4 text-center" onSubmit={submitInquiry}>
+                      <div className="space-y-2 text-left">
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 ml-1">Full Name</label>
+                        <Input name="name" required placeholder="John Doe" className="h-12 bg-white" />
                       </div>
                       
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-2 gap-4 text-left">
                         <div className="space-y-2">
-                          <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Email</label>
-                          <Input name="email" type="email" required placeholder="john@example.com" className="h-12 bg-slate-50" />
+                          <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 ml-1">Email</label>
+                          <Input name="email" type="email" required placeholder="john@example.com" className="h-12 bg-white" />
                         </div>
                         <div className="space-y-2">
-                          <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Phone</label>
-                          <Input name="phone" required placeholder="+260 97..." className="h-12 bg-slate-50" />
+                          <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 ml-1">Phone</label>
+                          <Input name="phone" required placeholder="+260 97..." className="h-12 bg-white" />
                         </div>
                       </div>
 
                       {inquiryType === 'viewing' && (
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Preferred Date</label>
-                          <Input name="date" type="date" required className="h-12 bg-slate-50" />
+                        <div className="space-y-2 text-left">
+                          <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 ml-1">Preferred Date</label>
+                          <Input name="date" type="date" required className="h-12 bg-white" />
                         </div>
                       )}
 
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Message</label>
+                      <div className="space-y-2 text-left">
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 ml-1">Message</label>
                         <textarea 
                           name="message"
                           required 
                           rows={4} 
-                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 resize-none font-medium text-slate-900"
+                          className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 resize-none font-medium text-slate-900"
                           placeholder="Any specific questions or requests?"
                         ></textarea>
                       </div>
