@@ -51,14 +51,23 @@ export default function AdminDashboard() {
         }));
       }
 
+      const deletedMockIds = JSON.parse(localStorage.getItem('deletedMockIds') || '[]');
+      
       if (formattedData.length === 0) {
-        setProperties(MOCK_PROPERTIES.map(p => ({ ...p, isMock: true })));
+        setProperties(MOCK_PROPERTIES
+          .filter(p => !deletedMockIds.includes(p.id))
+          .map(p => ({ ...p, isMock: true }))
+        );
       } else {
         setProperties(formattedData);
       }
     } catch (err) {
       console.error('Error fetching admin properties', err);
-      setProperties(MOCK_PROPERTIES.map(p => ({ ...p, isMock: true })));
+      const deletedMockIds = JSON.parse(localStorage.getItem('deletedMockIds') || '[]');
+      setProperties(MOCK_PROPERTIES
+        .filter(p => !deletedMockIds.includes(p.id))
+        .map(p => ({ ...p, isMock: true }))
+      );
     } finally {
       setLoading(false);
     }
@@ -122,6 +131,10 @@ export default function AdminDashboard() {
     
     try {
       if (propertyToDelete?.isMock) {
+        const deletedMockIds = JSON.parse(localStorage.getItem('deletedMockIds') || '[]');
+        deletedMockIds.push(id);
+        localStorage.setItem('deletedMockIds', JSON.stringify(deletedMockIds));
+        
         setProperties(prev => prev.filter(p => p.id !== id));
         return;
       }
