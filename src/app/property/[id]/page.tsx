@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'motion/react';
-import { MapPin, ArrowLeft, Share2, Heart, Check, X } from 'lucide-react';
+import { MapPin, ArrowLeft, Share2, Heart, Check, X, User } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { MOCK_PROPERTIES } from '@/data/mockData';
@@ -207,13 +207,8 @@ export default function PropertyDetails({ params }: { params: Promise<{ id: stri
               <div className="sticky top-32 bg-white border border-slate-200 p-8 rounded-[2.5rem] shadow-xl shadow-slate-200/50 text-center">
                 <h3 className="text-xl font-black mb-8 text-slate-900 uppercase tracking-widest">Connect</h3>
                 <div className="space-y-4 mb-10 flex flex-col items-center">
-                  <div className="w-20 h-20 rounded-3xl bg-slate-100 overflow-hidden border border-slate-200 shadow-inner relative">
-                    <Image 
-                      src={`https://api.dicebear.com/7.x/personas/svg?seed=${property.submittedBy || 'Felix'}`} 
-                      alt="Agent" 
-                      fill 
-                      className="object-cover"
-                    />
+                  <div className="w-20 h-20 rounded-3xl bg-slate-100 flex items-center justify-center border border-slate-200 shadow-inner">
+                    <User className="w-10 h-10 text-slate-400" />
                   </div>
                   <div>
                     <div className="font-black text-slate-800 text-lg">{property.submittedBy || 'Julian Vane'}</div>

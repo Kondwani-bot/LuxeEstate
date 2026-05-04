@@ -3,7 +3,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import Image from 'next/image';
 import { motion } from 'motion/react';
-import { Plus, Search, Filter, MoreVertical, LogOut, Trash2 } from 'lucide-react';
+import { Plus, Search, Filter, MoreVertical, LogOut, Trash2, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -330,13 +330,8 @@ function DashboardContent() {
               <div className="text-sm font-bold text-slate-800">{displayName}</div>
               <div className="text-[10px] uppercase tracking-widest text-sky-600">Premium Member</div>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-slate-100 overflow-hidden border border-slate-200 shadow-sm relative">
-              <Image 
-                src={`https://api.dicebear.com/7.x/personas/svg?seed=${displayName || 'Felix'}`} 
-                alt={displayName} 
-                fill
-                className="object-cover"
-              />
+            <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center border border-slate-200 shadow-sm">
+              <User className="w-5 h-5 text-slate-400" />
             </div>
             <button onClick={handleSignOut} className="ml-4 text-slate-400 hover:text-red-500 transition-colors" title="Sign Out">
               <LogOut className="w-5 h-5" />

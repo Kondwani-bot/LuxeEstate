@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { motion } from 'motion/react';
-import { Check, X, Eye, Search, Filter, RefreshCcw, Trash2, MapPin } from 'lucide-react';
+import { Check, X, Eye, Search, Filter, RefreshCcw, Trash2, MapPin, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -208,13 +208,8 @@ export default function AdminDashboard() {
                 </div>
                   <div className="p-8 space-y-8 text-center">
                     <div className="flex items-center justify-center gap-4 mb-8 pb-8 border-b border-slate-50">
-                      <div className="w-12 h-12 rounded-xl bg-slate-100 overflow-hidden border border-slate-200 relative shrink-0">
-                        <Image 
-                          src={`https://api.dicebear.com/7.x/personas/svg?seed=${selectedProperty.submittedBy || 'Felix'}`} 
-                          alt="Submitter" 
-                          fill
-                          className="object-cover"
-                        />
+                      <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center border border-slate-200 shrink-0">
+                        <User className="w-6 h-6 text-slate-400" />
                       </div>
                       <div className="text-left">
                         <div className="text-[10px] uppercase tracking-[0.2em] font-black text-sky-600">Submitted By</div>
