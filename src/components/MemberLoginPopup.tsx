@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, User } from 'lucide-react';
@@ -272,10 +273,15 @@ export default function MemberLoginPopup() {
     <>
       <button 
         onClick={() => setIsOpen(true)}
-        className="btn-glass text-sm font-bold uppercase tracking-widest text-[10px] flex items-center gap-2 px-6"
+        className="btn-glass text-sm font-bold uppercase tracking-widest text-[10px] flex items-center gap-2 px-5 py-2.5 rounded-full"
       >
-        <div className="w-6 h-6 rounded-lg bg-white/20 border border-white/30 flex items-center justify-center overflow-hidden">
-          <User className="w-3.5 h-3.5 text-white" />
+        <div className="w-7 h-7 rounded-full bg-white/20 border border-white/30 flex items-center justify-center overflow-hidden relative shadow-inner">
+          <Image 
+            src="https://api.dicebear.com/7.x/notionists/svg?seed=Felix" 
+            alt="User" 
+            fill 
+            className="object-cover"
+          />
         </div>
         Member Access
       </button>
