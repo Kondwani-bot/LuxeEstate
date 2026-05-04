@@ -4,7 +4,7 @@ import { Building2, Mail, Phone, MapPin, Facebook, Twitter, Instagram, Linkedin 
 export default function Footer() {
   return (
     <footer className="py-12 bg-white border-t border-slate-200">
-      <div className="container px-4 flex flex-col md:flex-row justify-between items-center gap-6">
+      <div className="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-6">
         <div className="text-sm font-medium text-slate-500">
           &copy; {new Date().getFullYear()} Luxe Estate Portal. All rights reserved.
         </div>

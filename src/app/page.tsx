@@ -102,13 +102,13 @@ export default function Home() {
           <div className="w-[600px] h-[600px] bg-blue-600 rounded-full blur-3xl absolute bottom-10 left-10 mix-blend-multiply"></div>
         </div>
 
-        <div className="container relative z-10">
+        <div className="container mx-auto relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
           >
-            <h1 className="text-5xl md:text-[5.5rem] leading-tight font-extrabold mb-6 tracking-tight text-slate-900">
+            <h1 className="text-4xl md:text-[5.5rem] leading-[1.1] font-extrabold mb-6 tracking-tight text-slate-900 px-2">
               Regulatory Excellence <br/>
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-800 to-sky-500">
                 In Real Estate.
@@ -119,7 +119,7 @@ export default function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
-            className="text-lg md:text-xl mb-12 max-w-2xl mx-auto text-slate-600 font-medium"
+            className="text-base md:text-xl mb-8 md:mb-12 max-w-2xl mx-auto text-slate-600 font-medium px-4"
           >
             The official portal for verified, compliant, and premium property listings. Promoting sustainable investments and modern living standards.
           </motion.p>
@@ -128,19 +128,19 @@ export default function Home() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
-            className="bg-white shadow-2xl p-3 max-w-4xl mx-auto flex flex-col md:flex-row gap-3 rounded-2xl border border-slate-100"
+            className="bg-white shadow-2xl p-2 md:p-3 max-w-4xl mx-auto flex flex-col md:flex-row gap-2 md:gap-3 rounded-2xl border border-slate-100"
           >
             <div className="flex-1 relative flex items-center">
               <Search className="absolute left-5 text-slate-400 w-5 h-5 pointer-events-none" />
               <Input 
-                placeholder="Search by location, price, or property type..." 
-                className="w-full pl-14 h-14 bg-transparent border-none shadow-none text-lg text-slate-800 placeholder-slate-400 focus-visible:ring-0 focus-visible:border-none focus-visible:outline-none"
+                placeholder="Search location, price, or type..." 
+                className="w-full pl-14 h-12 md:h-14 bg-transparent border-none shadow-none text-base md:text-lg text-slate-800 placeholder-slate-400 focus-visible:ring-0"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
             <div className="w-px bg-slate-200 hidden md:block my-2"></div>
-            <button className="h-14 px-10 rounded-xl bg-gradient-to-r from-blue-800 to-sky-500 text-white font-bold hover:shadow-lg hover:opacity-90 transition-all flex items-center justify-center gap-2">
+            <button className="h-12 md:h-14 px-10 rounded-xl bg-gradient-to-r from-blue-800 to-sky-500 text-white font-bold hover:shadow-lg hover:opacity-90 transition-all flex items-center justify-center gap-2 text-sm md:text-base">
               <Search className="w-4 h-4" /> Start Search
             </button>
           </motion.div>
@@ -148,29 +148,29 @@ export default function Home() {
       </section>
 
       {/* Filters & Sorting */}
-      <section className="container px-4 py-8 relative z-20">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
+      <section className="container mx-auto px-4 py-8 relative z-20">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-12">
           <button 
             onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center gap-2 px-6 py-3 rounded-xl bg-white border border-slate-200 shadow-sm hover:bg-slate-50 transition-all text-sm font-semibold text-slate-700"
+            className="w-full md:w-auto flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-white border border-slate-200 shadow-sm hover:bg-slate-50 transition-all text-xs font-bold uppercase tracking-widest text-slate-700"
           >
             <Filter className="w-4 h-4 text-sky-500" /> {showFilters ? 'Hide Filters' : 'Advanced Filters'}
           </button>
 
-          <div className="flex flex-col md:flex-row items-center gap-6">
-            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Sort By</span>
-            <div className="flex bg-white p-1 rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6 w-full md:w-auto">
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 block text-center">Sort By</span>
+            <div className="flex bg-white p-1 rounded-xl border border-slate-200 shadow-sm overflow-x-auto w-full md:w-auto no-scrollbar">
               {[
-                { id: 'newest', label: 'Newest First' },
-                { id: 'price-low', label: 'Price: Low-High' },
-                { id: 'price-high', label: 'Price: High-Low' }
+                { id: 'newest', label: 'Newest' },
+                { id: 'price-low', label: 'Price: Low' },
+                { id: 'price-high', label: 'Price: High' }
               ].map((option) => (
                 <button
                   key={option.id}
                   onClick={() => setSortBy(option.id)}
-                  className={`px-4 py-2 text-[10px] font-bold uppercase tracking-widest rounded-lg transition-all ${
+                  className={`flex-1 md:flex-none whitespace-nowrap px-4 py-2.5 text-[9px] md:text-[10px] font-bold uppercase tracking-widest rounded-lg transition-all ${
                     sortBy === option.id 
-                      ? 'bg-sky-600 text-white shadow-md' 
+                      ? 'bg-slate-900 text-white shadow-md' 
                       : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
                   }`}
                 >

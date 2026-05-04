@@ -94,14 +94,14 @@ export default function CollectionsPage() {
       <Navbar />
       
       <section className="pt-40 pb-12 px-4 bg-white border-b border-slate-200">
-        <div className="container px-4">
+        <div className="container mx-auto px-4">
           <h1 className="text-4xl font-extrabold mb-4 tracking-tight text-slate-900">Property Collections</h1>
           <p className="text-slate-500 font-medium">Browse our full catalog of premium and verified real estate listings.</p>
         </div>
       </section>
 
       {/* Filters & Sorting */}
-      <section className="container px-4 py-8 relative z-20 flex-1">
+      <section className="container mx-auto px-4 py-8 relative z-20 flex-1">
         <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
           <button 
             onClick={() => setShowFilters(!showFilters)}
