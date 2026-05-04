@@ -21,6 +21,7 @@ function DashboardContent() {
   const initialTab = searchParams.get('tab') === 'submit' ? 'submit' : 'listings';
   const [activeTab, setActiveTab] = useState(initialTab);
   const [user, setUser] = useState<any>(null);
+  const [profileComplete, setProfileComplete] = useState<boolean | null>(null);
   const [myListings, setMyListings] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
   const [mainImagePreview, setMainImagePreview] = useState<string | null>(null);
@@ -35,7 +36,7 @@ function DashboardContent() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         setUser(session.user);
-        syncMember(session.user);
+        checkProfile(session.user.id);
       }
     });
 
@@ -44,7 +45,7 @@ function DashboardContent() {
     } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         setUser(session.user);
-        syncMember(session.user);
+        checkProfile(session.user.id);
       } else {
         setUser(null);
       }
@@ -53,30 +54,30 @@ function DashboardContent() {
     return () => subscription.unsubscribe();
   }, []);
 
-  const syncMember = async (authUser: any) => {
+  const checkProfile = async (userId: string) => {
     try {
-      const { data: existing } = await supabase
+      const { data, error } = await supabase
         .from('members')
-        .select('id')
-        .eq('id', authUser.id)
+        .select('full_name, phone')
+        .eq('id', userId)
         .single();
       
-      if (!existing) {
-        await supabase.from('members').insert({
-          id: authUser.id,
-          email: authUser.email,
-          full_name: authUser.user_metadata?.full_name || authUser.email?.split('@')[0],
-          created_at: new Date().toISOString()
-        });
+      const isComplete = data && data.full_name && data.phone && data.full_name.trim() !== '' && data.phone.trim() !== '';
+      setProfileComplete(!!isComplete);
+      
+      if (!isComplete) {
+        router.push('/dashboard/profile');
       }
     } catch (err) {
-      console.error('Error syncing member data', err);
+      console.error('Error checking profile completion:', err);
+      // If we can't find a profile, assume it's incomplete
+      router.push('/dashboard/profile');
     }
   };
 
   useEffect(() => {
     const fetchUserProperties = async () => {
-      if (!user) return;
+      if (!user || !profileComplete) return;
       try {
         const { data, error } = await supabase
           .from('properties')

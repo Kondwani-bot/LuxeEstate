@@ -18,6 +18,7 @@ function SidebarInner({ role }: SidebarProps) {
   const memberLinks = [
     { name: 'My Listings', path: '/dashboard', match: (p: string, param: string | null) => p === '/dashboard' && param !== 'submit', icon: List },
     { name: 'Inquiries', path: '/dashboard/inquiries', match: (p: string, param: string | null) => p === '/dashboard/inquiries', icon: MessageSquare },
+    { name: 'Profile', path: '/dashboard/profile', match: (p: string, param: string | null) => p === '/dashboard/profile', icon: User },
     { name: 'Submit Property', path: '/dashboard?tab=submit', match: (p: string, param: string | null) => p === '/dashboard' && param === 'submit', icon: PlusCircle },
   ];
 

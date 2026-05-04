@@ -7,32 +7,63 @@ import { MOCK_PROPERTIES } from '@/data/mockData';
 import { MapPin, Calendar, Mail, Phone, MessageSquare, Trash2, ExternalLink } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function MemberInquiries() {
   const [inquiries, setInquiries] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
+  const [profileComplete, setProfileComplete] = useState<boolean | null>(null);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
+      if (!session) {
+        window.location.href = '/';
+      } else {
         setUser(session.user);
+        checkProfile(session.user.id);
       }
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user || null);
+      if (session?.user) {
+        setUser(session.user);
+        checkProfile(session.user.id);
+      } else {
+        setUser(null);
+      }
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
+  const checkProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('members')
+        .select('full_name, phone')
+        .eq('id', userId)
+        .single();
+      
+      const isComplete = data && data.full_name && data.phone && data.full_name.trim() !== '' && data.phone.trim() !== '';
+      setProfileComplete(!!isComplete);
+      
+      if (!isComplete) {
+        router.push('/dashboard/profile');
+      }
+    } catch (err) {
+      console.error('Error checking profile completion:', err);
+      router.push('/dashboard/profile');
+    }
+  };
+
   useEffect(() => {
     const fetchInquiries = async () => {
-      if (!user) return;
+      if (!user || !profileComplete) return;
       try {
         const userEmail = user.email;
         
