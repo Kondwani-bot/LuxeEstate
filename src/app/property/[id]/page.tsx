@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'motion/react';
@@ -112,13 +113,11 @@ export default function PropertyDetails({ params }: { params: Promise<{ id: stri
 
   if (!property) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 text-slate-900">
-        <div className="text-center">
-          <h2 className="text-3xl mb-4 font-bold">Property Not Found</h2>
-          <Link href="/">
-            <button className="px-6 py-3 bg-sky-600 text-white rounded-xl font-bold hover:bg-sky-700 transition">Return Home</button>
-          </Link>
-        </div>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 text-slate-900 px-4 text-center">
+        <h2 className="text-3xl mb-4 font-bold">Property Not Found</h2>
+        <Link href="/">
+          <button className="px-6 py-3 bg-sky-600 text-white rounded-xl font-bold hover:bg-sky-700 transition">Return Home</button>
+        </Link>
       </div>
     );
   }
@@ -130,111 +129,116 @@ export default function PropertyDetails({ params }: { params: Promise<{ id: stri
       <main className="flex-1 pt-24 relative">
         <div className="container mx-auto px-4 py-8">
           {/* Breadcrumbs & Actions */}
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-12">
             <Link href="/" className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-slate-500 hover:text-sky-600 transition-colors">
               <ArrowLeft className="w-4 h-4" /> Back to Collection
             </Link>
             <div className="flex gap-4 relative">
               <button 
                 onClick={handleShare}
-                className={`p-2 border rounded-lg transition ${isShared ? 'bg-sky-50 border-sky-200 text-sky-600' : 'border-slate-200 hover:bg-slate-100 text-slate-600'}`}
+                className={`p-3 border rounded-xl transition ${isShared ? 'bg-sky-50 border-sky-200 text-sky-600' : 'border-slate-200 hover:bg-slate-100 text-slate-600 shadow-sm'}`}
               >
                 {isShared ? <Check className="w-5 h-5" /> : <Share2 className="w-5 h-5" />}
               </button>
               {isShared && (
-                <div className="absolute -top-10 right-12 bg-slate-800 text-white text-[10px] px-3 py-1 rounded shadow-lg font-bold uppercase tracking-widest pointer-events-none whitespace-nowrap">Link Copied!</div>
+                <div className="absolute -top-12 right-0 bg-slate-800 text-white text-[10px] px-3 py-1.5 rounded shadow-xl font-bold uppercase tracking-widest pointer-events-none whitespace-nowrap z-20">Link Copied!</div>
               )}
               <button 
                 onClick={() => setIsLiked(!isLiked)}
-                className={`p-2 border rounded-lg transition ${isLiked ? 'bg-red-50 border-red-200 text-red-500' : 'border-slate-200 hover:bg-slate-100 text-slate-600'}`}
+                className={`p-3 border rounded-xl transition ${isLiked ? 'bg-red-50 border-red-200 text-red-500' : 'border-slate-200 hover:bg-slate-100 text-slate-600 shadow-sm'}`}
               >
                 <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
               </button>
             </div>
           </div>
 
-          {/* Image Gallery */}
-          <div className="mb-12 max-w-4xl mx-auto">
+          {/* Centered Gallery */}
+          <div className="mb-16 max-w-5xl mx-auto">
             <Gallery images={property.images} />
           </div>
 
-          {/* Content */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-16">
+          {/* Centered Content */}
+          <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-12 lg:gap-16">
             <div className="lg:col-span-2 text-center md:text-left flex flex-col items-center md:items-start">
-              <div className="flex flex-col md:flex-row justify-between items-center md:items-start mb-6 w-full gap-4">
+              <div className="flex flex-col md:flex-row justify-between items-center md:items-start mb-8 w-full gap-6">
                 <div className="flex flex-col items-center md:items-start">
-                  <h1 className="text-4xl md:text-5xl font-bold mb-2 text-slate-900">{property.title}</h1>
-                  <div className="flex items-center gap-2 text-slate-500 font-medium">
+                  <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold mb-4 tracking-tight text-slate-900 leading-tight">{property.title}</h1>
+                  <div className="flex items-center gap-2 text-slate-500 font-bold uppercase tracking-widest text-xs">
                     <MapPin className="w-4 h-4 text-sky-500" /> {property.location}
                   </div>
                 </div>
-                <div className="text-center md:text-right">
-                  <div className="text-3xl font-bold text-sky-600 mb-1">K{property.price.toLocaleString()}</div>
-                  <Badge variant="outline" className="rounded-lg border-none bg-green-100 text-green-700 uppercase tracking-widest px-3 py-1 text-[10px] font-bold">Approved</Badge>
+                <div className="text-center md:text-right shrink-0">
+                  <div className="text-4xl font-black text-sky-600 mb-2">K{property.price.toLocaleString()}</div>
+                  <Badge variant="outline" className="rounded-full border-none bg-green-100 text-green-700 uppercase tracking-[0.2em] px-4 py-1.5 text-[10px] font-black">Verified & Approved</Badge>
                 </div>
               </div>
 
-              <div className="h-px bg-slate-200 my-8 w-full"></div>
+              <div className="h-px bg-slate-200 my-10 w-full opacity-60"></div>
 
-              <div className="mb-12 w-full">
-                <div className="flex items-center justify-center md:justify-start gap-4 mb-6">
-                  <div className="px-4 py-2 rounded-xl bg-slate-100 border border-slate-200 text-xs font-bold uppercase tracking-widest text-slate-700">
+              <div className="mb-16 w-full">
+                <div className="flex items-center justify-center md:justify-start gap-4 mb-8">
+                  <div className="px-5 py-2.5 rounded-full bg-slate-900 text-white text-[10px] font-black uppercase tracking-[0.2em]">
                     {property.type}
                   </div>
                 </div>
-                <h3 className="text-xl font-bold uppercase tracking-widest mb-4 text-slate-800">Description</h3>
-                <p className="text-slate-600 leading-relaxed font-medium max-w-2xl">
+                <h3 className="text-xl font-black uppercase tracking-[0.3em] mb-6 text-slate-800">The Residence</h3>
+                <p className="text-slate-600 leading-relaxed font-medium text-lg max-w-3xl">
                   {property.description}
                 </p>
               </div>
 
-              <div className="mb-12 w-full">
-                <h3 className="text-xl font-bold uppercase tracking-widest mb-6 text-slate-800">Features & Amenities</h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-y-4 max-w-xl mx-auto md:mx-0">
+              <div className="mb-16 w-full">
+                <h3 className="text-xl font-black uppercase tracking-[0.3em] mb-8 text-slate-800">Master Features</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 w-full">
                   {property.features.map((feature, i) => (
-                    <div key={i} className="flex items-center gap-3">
-                      <div className="w-5 h-5 rounded-full bg-sky-100 flex items-center justify-center">
-                        <Check className="w-3 h-3 text-sky-600" />
+                    <div key={i} className="flex items-center gap-4 p-4 rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md transition-shadow group">
+                      <div className="w-8 h-8 rounded-full bg-sky-50 flex items-center justify-center group-hover:bg-sky-500 transition-colors">
+                        <Check className="w-4 h-4 text-sky-600 group-hover:text-white transition-colors" />
                       </div>
-                      <span className="text-sm font-medium text-slate-700">{feature}</span>
+                      <span className="text-sm font-bold text-slate-700 tracking-tight">{feature}</span>
                     </div>
                   ))}
                 </div>
               </div>
             </div>
 
-            {/* Sidebar / Contact */}
+            {/* Sidebar / Contact - Centered on Mobile */}
             <div className="lg:col-span-1">
-              <div className="sticky top-32 bg-white border border-slate-200 p-8 rounded-3xl shadow-lg">
-                <h3 className="text-xl font-bold mb-6 text-slate-900">Inquire About This Property</h3>
-                <div className="space-y-4 mb-8">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-slate-100 overflow-hidden border border-slate-200">
-                      <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=agent" alt="Agent" />
-                    </div>
-                    <div>
-                      <div className="font-bold text-slate-800">{property.submittedBy || 'Julian Vane'}</div>
-                      <div className="text-[10px] text-sky-600 uppercase tracking-widest font-bold">Listing Member</div>
-                    </div>
+              <div className="sticky top-32 bg-white border border-slate-200 p-8 rounded-[2.5rem] shadow-xl shadow-slate-200/50 text-center">
+                <h3 className="text-xl font-black mb-8 text-slate-900 uppercase tracking-widest">Connect</h3>
+                <div className="space-y-4 mb-10 flex flex-col items-center">
+                  <div className="w-20 h-20 rounded-3xl bg-slate-100 overflow-hidden border border-slate-200 shadow-inner relative">
+                    <Image 
+                      src={`https://api.dicebear.com/7.x/notionists/svg?seed=${property.submittedBy || 'Felix'}`} 
+                      alt="Agent" 
+                      fill 
+                      className="object-cover"
+                    />
+                  </div>
+                  <div>
+                    <div className="font-black text-slate-800 text-lg">{property.submittedBy || 'Julian Vane'}</div>
+                    <div className="text-[10px] text-sky-600 uppercase tracking-[0.3em] font-black mt-1">Official Member</div>
                   </div>
                 </div>
                 <div className="space-y-4">
                   <button 
                     onClick={() => setInquiryType('viewing')}
-                    className="w-full rounded-xl h-12 bg-sky-600 text-white font-bold hover:bg-sky-700 transition-all shadow-sm"
+                    className="w-full rounded-2xl h-14 bg-slate-900 text-white font-black uppercase tracking-widest text-xs hover:bg-slate-800 transition-all shadow-lg shadow-slate-200"
                   >
-                    Request Private Viewing
+                    Request Viewing
                   </button>
                   <button 
                     onClick={() => setInquiryType('contact')}
-                    className="w-full rounded-xl h-12 border border-slate-300 text-slate-700 font-bold hover:bg-slate-50 transition-all"
+                    className="w-full rounded-2xl h-14 border-2 border-slate-200 text-slate-700 font-black uppercase tracking-widest text-xs hover:bg-slate-50 transition-all"
                   >
-                    Contact Agent
+                    Contact Info
                   </button>
                 </div>
-                <p className="mt-6 text-[10px] text-center text-slate-400 uppercase tracking-widest font-bold">
-                  Reference ID: LUXE-{property.id}
-                </p>
+                <div className="mt-10 pt-8 border-t border-slate-100">
+                   <p className="text-[10px] text-slate-400 uppercase tracking-[0.3em] font-black">
+                     REF ID: LUXE-{property.id.slice(0, 8)}
+                   </p>
+                </div>
               </div>
             </div>
           </div>
@@ -243,78 +247,86 @@ export default function PropertyDetails({ params }: { params: Promise<{ id: stri
         {/* Modal Overlay for Forms */}
         <AnimatePresence>
           {inquiryType !== 'none' && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
               <motion.div 
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                className="bg-white rounded-3xl p-8 max-w-lg w-full shadow-2xl relative border border-slate-200"
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                className="bg-white rounded-[3rem] p-8 md:p-12 max-w-2xl w-full shadow-2xl relative border border-slate-200 overflow-hidden"
               >
+                {/* Decorative background */}
+                <div className="absolute top-0 right-0 w-32 h-32 bg-sky-50 rounded-bl-full -z-10 opacity-50"></div>
+                
                 <button 
                   onClick={() => setInquiryType('none')}
-                  className="absolute top-6 right-6 p-2 bg-slate-50 text-slate-500 hover:text-slate-900 rounded-full transition-colors"
+                  className="absolute top-8 right-8 p-3 bg-slate-50 text-slate-500 hover:text-slate-900 rounded-2xl transition-all hover:rotate-90"
                 >
-                  <X className="w-5 h-5"/>
+                  <X className="w-6 h-6"/>
                 </button>
 
                 {inquiryStatus === 'success' ? (
-                  <div className="text-center py-12">
-                    <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                      <Check className="w-10 h-10" />
-                    </div>
-                    <h3 className="text-2xl font-bold text-slate-900 mb-2">Request Sent!</h3>
-                    <p className="text-slate-500 font-medium">The agent will be in contact with you shortly.</p>
+                  <div className="text-center py-16">
+                    <motion.div 
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: 'spring', damping: 12 }}
+                      className="w-24 h-24 bg-green-600 text-white rounded-full flex items-center justify-center mx-auto mb-8 shadow-xl shadow-green-100"
+                    >
+                      <Check className="w-12 h-12" />
+                    </motion.div>
+                    <h3 className="text-3xl font-black text-slate-900 mb-4 uppercase tracking-tighter">Request Received</h3>
+                    <p className="text-slate-500 font-bold text-lg">Our luxury property consultant will reach out within 24 hours.</p>
                   </div>
                 ) : (
                   <>
-                    <h3 className="text-2xl font-bold text-slate-900 mb-2 text-center">
-                      {inquiryType === 'viewing' ? 'Request Private Viewing' : 'Contact Agent'}
+                    <h3 className="text-3xl font-black text-slate-900 mb-2 text-center uppercase tracking-tighter">
+                      {inquiryType === 'viewing' ? 'Request Private Viewing' : 'Contact Consultant'}
                     </h3>
-                    <p className="text-slate-500 text-sm mb-6 pb-6 border-b border-slate-100 text-center">
-                      Leave your details below and the listing agent for <strong>{property.title}</strong> will reach out to accommodate you.
+                    <p className="text-slate-500 text-sm mb-10 pb-6 border-b border-slate-100 text-center font-medium">
+                      Enter your credentials below to initiate communication regarding <strong>{property.title}</strong>.
                     </p>
 
-                  <form className="space-y-4 text-center" onSubmit={submitInquiry}>
-                      <div className="space-y-2 text-left">
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 ml-1">Full Name</label>
-                        <Input name="name" required placeholder="John Doe" className="h-12 bg-white" />
+                    <form className="space-y-6" onSubmit={submitInquiry}>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 ml-1">Universal Identity</label>
+                        <Input name="name" required placeholder="Your Full Name" className="h-14 bg-slate-50 border-slate-200 rounded-2xl px-6 font-bold focus:ring-sky-500" />
                       </div>
                       
-                      <div className="grid grid-cols-2 gap-4 text-left">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                          <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 ml-1">Email</label>
-                          <Input name="email" type="email" required placeholder="john@example.com" className="h-12 bg-white" />
+                          <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 ml-1">Electronic Mail</label>
+                          <Input name="email" type="email" required placeholder="email@address.com" className="h-14 bg-slate-50 border-slate-200 rounded-2xl px-6 font-bold" />
                         </div>
                         <div className="space-y-2">
-                          <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 ml-1">Phone</label>
-                          <Input name="phone" required placeholder="+260 97..." className="h-12 bg-white" />
+                          <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 ml-1">Tele-Communication</label>
+                          <Input name="phone" required placeholder="+260..." className="h-14 bg-slate-50 border-slate-200 rounded-2xl px-6 font-bold" />
                         </div>
                       </div>
 
                       {inquiryType === 'viewing' && (
-                        <div className="space-y-2 text-left">
-                          <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 ml-1">Preferred Date</label>
-                          <Input name="date" type="date" required className="h-12 bg-white" />
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 ml-1">Preferred Visitation Date</label>
+                          <Input name="date" type="date" required className="h-14 bg-slate-50 border-slate-200 rounded-2xl px-6 font-bold" />
                         </div>
                       )}
 
-                      <div className="space-y-2 text-left">
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 ml-1">Message</label>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 ml-1">Inquiry Specifications</label>
                         <textarea 
                           name="message"
                           required 
                           rows={4} 
-                          className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 resize-none font-medium text-slate-900"
-                          placeholder="Any specific questions or requests?"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 resize-none font-bold text-slate-900"
+                          placeholder="State your requirements or questions..."
                         ></textarea>
                       </div>
 
                       <button 
                         type="submit" 
                         disabled={inquiryStatus === 'sending'}
-                        className="w-full h-14 bg-sky-600 text-white rounded-xl font-bold mt-4 hover:bg-sky-700 transition"
+                        className="w-full h-16 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-[0.2em] text-xs mt-4 hover:bg-slate-800 transition-all shadow-xl shadow-slate-200"
                       >
-                        {inquiryStatus === 'sending' ? 'Sending Request...' : 'Send Request'}
+                        {inquiryStatus === 'sending' ? 'Transmitting...' : 'Initiate Request'}
                       </button>
                     </form>
                   </>

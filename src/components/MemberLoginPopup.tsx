@@ -272,9 +272,12 @@ export default function MemberLoginPopup() {
     <>
       <button 
         onClick={() => setIsOpen(true)}
-        className="btn-glass text-sm font-medium flex items-center gap-2"
+        className="btn-glass text-sm font-bold uppercase tracking-widest text-[10px] flex items-center gap-2 px-6"
       >
-        <User className="w-4 h-4" /> Member Login
+        <div className="w-6 h-6 rounded-lg bg-white/20 border border-white/30 flex items-center justify-center overflow-hidden">
+          <User className="w-3.5 h-3.5 text-white" />
+        </div>
+        Member Access
       </button>
       {mounted && createPortal(modalContent, document.body)}
     </>

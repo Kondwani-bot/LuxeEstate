@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import { MapPin, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Property } from '@/types';
@@ -18,7 +19,7 @@ export default function PropertyCard({ property }: PropertyCardProps) {
     'Rejected': 'bg-red-100 text-red-700 font-bold'
   };
 
-  const images = property.images && property.images.length > 0 ? property.images : [property.imageUrl];
+  const images = property.images && property.images.length > 0 ? property.images : [property.imageUrl || 'https://picsum.photos/seed/placeholder/800/600'];
 
   const nextImage = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -33,20 +34,27 @@ export default function PropertyCard({ property }: PropertyCardProps) {
   };
 
   return (
-    <div className="luxury-card group flex flex-col h-full hover:-translate-y-1">
-      <div className="relative aspect-[16/10] overflow-hidden">
+    <div className="luxury-card group flex flex-col h-full hover:shadow-2xl transition-all duration-500">
+      <div className="relative aspect-[16/10] overflow-hidden rounded-t-2xl">
         <AnimatePresence mode="wait">
-          <motion.img 
+          <motion.div
             key={currentImageIndex}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            src={images[currentImageIndex]} 
-            alt={property.title} 
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 absolute inset-0"
-            referrerPolicy="no-referrer"
-          />
+            transition={{ duration: 0.4 }}
+            className="absolute inset-0"
+          >
+            <Image 
+              src={images[currentImageIndex]} 
+              alt={property.title} 
+              fill
+              className="object-cover group-hover:scale-110 transition-transform duration-1000"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              referrerPolicy="no-referrer"
+              priority={false}
+            />
+          </motion.div>
         </AnimatePresence>
         
         {images.length > 1 && (

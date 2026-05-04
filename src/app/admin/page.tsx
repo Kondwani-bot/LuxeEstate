@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { motion } from 'motion/react';
 import { Check, X, Eye, Search, Filter, RefreshCcw, Trash2, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -205,14 +206,29 @@ export default function AdminDashboard() {
                     <X className="w-6 h-6" />
                   </button>
                 </div>
-                <div className="p-8 space-y-8 text-center">
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {selectedProperty.images.map((img, i) => (
-                      <div key={i} className="aspect-[4/3] rounded-xl overflow-hidden border border-slate-200">
-                        <img src={img} alt="" className="w-full h-full object-cover" />
+                  <div className="p-8 space-y-8 text-center">
+                    <div className="flex items-center justify-center gap-4 mb-8 pb-8 border-b border-slate-50">
+                      <div className="w-12 h-12 rounded-xl bg-slate-100 overflow-hidden border border-slate-200 relative shrink-0">
+                        <Image 
+                          src={`https://api.dicebear.com/7.x/notionists/svg?seed=${selectedProperty.submittedBy || 'Felix'}`} 
+                          alt="Submitter" 
+                          fill
+                          className="object-cover"
+                        />
                       </div>
-                    ))}
-                  </div>
+                      <div className="text-left">
+                        <div className="text-[10px] uppercase tracking-[0.2em] font-black text-sky-600">Submitted By</div>
+                        <div className="font-bold text-slate-800">{selectedProperty.submittedBy || 'Anonymous Member'}</div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {selectedProperty.images.map((img, i) => (
+                        <div key={i} className="aspect-[4/3] rounded-xl overflow-hidden border border-slate-200 relative">
+                          <Image src={img} alt="" fill className="object-cover" sizes="(max-width: 768px) 50vw, 300px" />
+                        </div>
+                      ))}
+                    </div>
                   <div className="bg-slate-50 p-6 rounded-2xl inline-block w-full">
                     <h3 className="font-bold mb-2 uppercase tracking-widest text-[10px] text-slate-500">Description</h3>
                     <p className="text-slate-700 leading-relaxed text-sm max-w-2xl mx-auto">{selectedProperty.description}</p>
@@ -289,7 +305,15 @@ export default function AdminDashboard() {
                       <TableRow key={property.id} className="border-slate-100 hover:bg-slate-50 transition-colors">
                         <TableCell className="py-4 px-8">
                           <div className="flex items-center gap-4">
-                            <img src={property.imageUrl} alt="" className="w-12 h-12 object-cover rounded-lg border border-slate-200 whitespace-nowrap" />
+                            <div className="w-12 h-12 relative shrink-0">
+                              <Image 
+                                src={property.imageUrl} 
+                                alt="" 
+                                fill 
+                                className="object-cover rounded-lg border border-slate-200" 
+                                sizes="48px"
+                              />
+                            </div>
                             <div className="flex flex-col">
                               <div className="font-bold text-slate-800 line-clamp-1">{property.title}</div>
                               {property.isMock && (

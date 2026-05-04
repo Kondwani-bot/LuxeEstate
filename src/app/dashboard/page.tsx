@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, Suspense } from 'react';
+import Image from 'next/image';
 import { motion } from 'motion/react';
 import { Plus, Search, Filter, MoreVertical, LogOut, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -329,13 +330,14 @@ function DashboardContent() {
               <div className="text-sm font-bold text-slate-800">{displayName}</div>
               <div className="text-[10px] uppercase tracking-widest text-sky-600">Premium Member</div>
             </div>
-            {user?.user_metadata?.avatar_url ? (
-              <img src={user.user_metadata.avatar_url} alt={displayName} className="w-10 h-10 rounded-xl border border-slate-200 shadow-sm object-cover" />
-            ) : (
-              <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center border border-blue-200 shadow-sm">
-                <span className="text-blue-700 font-bold">{displayInitials}</span>
-              </div>
-            )}
+            <div className="w-10 h-10 rounded-xl bg-slate-100 overflow-hidden border border-slate-200 shadow-sm relative">
+              <Image 
+                src={`https://api.dicebear.com/7.x/notionists/svg?seed=${displayName || 'Felix'}`} 
+                alt={displayName} 
+                fill
+                className="object-cover"
+              />
+            </div>
             <button onClick={handleSignOut} className="ml-4 text-slate-400 hover:text-red-500 transition-colors" title="Sign Out">
               <LogOut className="w-5 h-5" />
             </button>
