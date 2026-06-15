@@ -1,6 +1,6 @@
 {
   "name": "LuxeEstate",
   "description": "A premium real estate platform for browsing, submitting, and managing luxury property listings.",
-  "requestFramePermissions": [],
-  "majorCapabilities": []
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

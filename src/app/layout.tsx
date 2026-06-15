@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ReactNode } from "react";
 import "./globals.css";
+import AIAgentWidget from "@/components/AIAgentWidget";
 
 export const metadata: Metadata = {
   title: "Lumina Real Estate",
@@ -16,7 +17,9 @@ export default function RootLayout({
     <html lang="en">
       <body className="antialiased">
         {children}
+        <AIAgentWidget />
       </body>
     </html>
   );
 }
+
