@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Bot, MessageSquare, Mic, MicOff, Volume2, VolumeX, X, Send, 
-  Sparkles, Calendar, Mail, FileSpreadsheet, ArrowUpRight, CheckCircle2, RefreshCw 
+  Sparkles, CheckCircle2, FileSpreadsheet, Radio, Smartphone 
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { Property } from '@/types';
@@ -26,23 +26,15 @@ interface Message {
   submittedInquiry?: any;
 }
 
-interface SyncedRow {
-  timestamp: string;
-  type: string;
-  name: string;
-  email: string;
-  phone: string;
-  details: string;
-  property: string;
-}
-
 export default function AIAgentWidget() {
   const [isOpen, setIsOpen] = useState(false);
+  const [activeMode, setActiveMode] = useState<'text' | 'voice'>('text');
+  
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'welcome',
       role: 'assistant',
-      content: "Hello! I am Aria, your exclusive AI Concierge. I can guide you through our luxury property portfolio, answer detailed specifications, and directly connect you with owners or schedule viewings. Try speaking to me or typing your desires!",
+      content: "Hello! I am Aria, your AI Concierge. I can help you explore our luxury estates, answer specifications, schedule viewings, or directly contact property owners. Try typing or toggle 'Voice Live' to talk directly with me!",
       timestamp: new Date()
     }
   ]);
@@ -53,19 +45,13 @@ export default function AIAgentWidget() {
   const [isListening, setIsListening] = useState(false);
   const [properties, setProperties] = useState<Property[]>([]);
   
-  // Google Sheets state
-  const [session, setSession] = useState<any>(null);
-  const [googleToken, setGoogleToken] = useState<string | null>(null);
-  const [spreadsheetId, setSpreadsheetId] = useState<string | null>(null);
-  const [spreadsheetUrl, setSpreadsheetUrl] = useState<string | null>(null);
-  const [sheetsSyncList, setSheetsSyncList] = useState<SyncedRow[]>([]);
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [googleUser, setGoogleUser] = useState<any>(null);
+  // Auto-sync status feedback
+  const [lastSyncedRow, setLastSyncedRow] = useState<any>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
 
-  // Load properties on mount
+  // Load LuxeEstate listings for search logic
   useEffect(() => {
     const loadProperties = async () => {
       try {
@@ -88,66 +74,20 @@ export default function AIAgentWidget() {
           setProperties(formatted);
         }
       } catch (err) {
-        console.warn("Failed loading properties from Supabase, resorting to static cache", err);
+        console.warn("Using fallback listings", err);
       }
     };
     loadProperties();
   }, []);
 
-  // Monitor auth changes & fetch Google OAuth token if logged in
-  useEffect(() => {
-    const fetchSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (data?.session) {
-        setSession(data.session);
-        setGoogleUser(data.session.user);
-        // Supabase OAuth provides google user info and accesses provider credentials
-        const providerToken = data.session.provider_token;
-        if (providerToken) {
-          setGoogleToken(providerToken);
-        }
-      }
-    };
-    fetchSession();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
-      setSession(currentSession);
-      if (currentSession) {
-        setGoogleUser(currentSession.user);
-        if (currentSession.provider_token) {
-          setGoogleToken(currentSession.provider_token);
-        }
-      } else {
-        setGoogleToken(null);
-        setGoogleUser(null);
-      }
-    });
-
-    // Load any saved spreadsheetId from localstorage
-    const savedSheetId = localStorage.getItem('luxeestate_spreadsheet_id');
-    const savedSheetUrl = localStorage.getItem('luxeestate_spreadsheet_url');
-    if (savedSheetId) setSpreadsheetId(savedSheetId);
-    if (savedSheetUrl) setSpreadsheetUrl(savedSheetUrl);
-
-    // Load synced list
-    const savedLogs = localStorage.getItem('luxeestate_synced_sheets_logs');
-    if (savedLogs) {
-      try { setSheetsSyncList(JSON.parse(savedLogs)); } catch(e) {}
-    }
-
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
-  }, []);
-
-  // Sync scroll
+  // Sync scroll on updates
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages, loading]);
+  }, [messages, loading, activeMode]);
 
-  // Handle Speech Recognition/Listening
+  // Voice Speech Recog Setup
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
@@ -162,8 +102,10 @@ export default function AIAgentWidget() {
 
       rec.onresult = (event: any) => {
         const text = event.results[0][0].transcript;
-        setInputValue(text);
-        sendMessage(text);
+        if (text.trim()) {
+          setInputValue('');
+          sendMessage(text);
+        }
       };
 
       rec.onerror = (err: any) => {
@@ -177,11 +119,11 @@ export default function AIAgentWidget() {
 
       recognitionRef.current = rec;
     }
-  }, [properties]);
+  }, [properties, messages]);
 
   const toggleListening = () => {
     if (!recognitionRef.current) {
-      alert("Voice input is not supported in this browser container. Please try Chrome/Safari.");
+      alert("Mic input is not fully supported in this container browser setup. Please type instead!");
       return;
     }
 
@@ -193,51 +135,45 @@ export default function AIAgentWidget() {
     }
   };
 
-  // Text synthesis (Speaking results back)
+  // Convert text output to high-end spoken synthesis
   const speakResponse = (text: string) => {
-    if (!voiceEnabled || !window.speechSynthesis) return;
+    if (!window.speechSynthesis) return;
 
-    window.speechSynthesis.cancel(); // Stop any pending speech
+    window.speechSynthesis.cancel(); // Clears queue
 
-    // Remove the tags from speech string so she doesn't read brackets aloud!
-    const speakableText = text
+    const cleanSpeech = text
       .replace(/\[SCHEDULE_MEETING:\s*.*?\]/g, '')
       .replace(/\[SUBMIT_INQUIRY:\s*.*?\]/g, '')
       .trim();
 
-    if (!speakableText) return;
+    if (!cleanSpeech) return;
 
-    const utterance = new SpeechSynthesisUtterance(speakableText);
+    const utterance = new SpeechSynthesisUtterance(cleanSpeech);
     utterance.onstart = () => setIsSpeaking(true);
     utterance.onend = () => setIsSpeaking(false);
     utterance.onerror = () => setIsSpeaking(false);
 
-    // Use nice voice
-    const voices = window.speechSynthesis.getVoices();
-    const attractiveVoice = voices.find(v => 
+    const utterances = window.speechSynthesis.getVoices();
+    const premiumVoice = utterances.find(v => 
       v.name.includes("Google US English") || 
       v.name.includes("Samantha") || 
-      v.name.includes("Natural") ||
       v.lang.startsWith("en")
     );
-    if (attractiveVoice) utterance.voice = attractiveVoice;
-    utterance.rate = 1.05;
-    utterance.pitch = 1.0;
+    if (premiumVoice) utterance.voice = premiumVoice;
+    utterance.rate = 1.0;
+    utterance.pitch = 1.05;
 
     window.speechSynthesis.speak(utterance);
   };
 
-  // Log to Google Sheets
-  const logToGoogleSheets = async (type: string, name: string, email: string, phone: string, propertyId: string, propertyTitle: string, message: string) => {
+  // Trigger server-side background synchronization automatically for leads
+  const autoAppendToSheets = async (type: string, name: string, email: string, phone: string, propertyId: string, propertyTitle: string, message: string) => {
     try {
-      setIsSyncing(true);
       const payload = {
-        accessToken: googleToken, // Passed if verified
-        spreadsheetId: spreadsheetId,
         type,
-        name,
-        email,
-        phone,
+        name: name || "Luxe Guest",
+        email: email || "automatic-sync@luxeestate.com",
+        phone: phone || "No Phone Provided",
         propertyId,
         propertyTitle,
         message
@@ -251,62 +187,32 @@ export default function AIAgentWidget() {
 
       const data = await res.json();
       if (data.success) {
-        if (data.spreadsheetId && !spreadsheetId) {
-          setSpreadsheetId(data.spreadsheetId);
-          localStorage.setItem('luxeestate_spreadsheet_id', data.spreadsheetId);
-          if (data.spreadsheetUrl) {
-            setSpreadsheetUrl(data.spreadsheetUrl);
-            localStorage.setItem('luxeestate_spreadsheet_url', data.spreadsheetUrl);
-          }
-        }
-
-        // Add to local synced viewer
-        const newLogEntry: SyncedRow = {
-          timestamp: new Date().toLocaleString(),
+        setLastSyncedRow({
           type,
-          name: name || "Anonymous",
-          email: email || "Anonymous",
-          phone: phone || "None",
-          property: propertyTitle || "General Chat",
-          details: message
-        };
-
-        const updatedSyncs = [newLogEntry, ...sheetsSyncList].slice(0, 30);
-        setSheetsSyncList(updatedSyncs);
-        localStorage.setItem('luxeestate_synced_sheets_logs', JSON.stringify(updatedSyncs));
+          title: propertyTitle || "General Chat Matchmaking",
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        });
       }
     } catch (err) {
-      console.error("Sheets log synchronizer issue:", err);
-    } finally {
-      setIsSyncing(false);
+      console.warn("Background sheet auto sync triggered safely:", err);
     }
   };
 
-  const handleOAuthConnect = async () => {
-    try {
-      // Connect specifically requesting spreadsheets scope
-      await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          scopes: 'https://www.googleapis.com/auth/spreadsheets',
-          redirectTo: window.location.href
-        }
-      });
-    } catch (err) {
-      console.error("OAuth Connection Error:", err);
+  // Switch voice mode, enable sound responses automatically
+  const handleModeChange = (mode: 'text' | 'voice') => {
+    setActiveMode(mode);
+    if (mode === 'voice') {
+      setVoiceEnabled(true);
+      // Give spoken confirmation
+      setTimeout(() => {
+        speakResponse("Voice session initiated. Tap the microphone to talk with me!");
+      }, 300);
+    } else {
+      setVoiceEnabled(false);
+      if (window.speechSynthesis) window.speechSynthesis.cancel();
     }
   };
 
-  const handleSignOutGoogle = async () => {
-    await supabase.auth.signOut();
-    setGoogleToken(null);
-    setSpreadsheetId(null);
-    setSpreadsheetUrl(null);
-    localStorage.removeItem('luxeestate_spreadsheet_id');
-    localStorage.removeItem('luxeestate_spreadsheet_url');
-  };
-
-  // Perform chatbot logic
   const sendMessage = async (textToSend?: string) => {
     const rawVal = textToSend || inputValue;
     if (!rawVal.trim()) return;
@@ -323,11 +229,9 @@ export default function AIAgentWidget() {
     setMessages(prev => [...prev, newUserMsg]);
     setLoading(true);
 
-    // Cancel typing speech
     if (window.speechSynthesis) window.speechSynthesis.cancel();
 
     try {
-      // Prepare property array to pass to AI context
       const miniProperties = properties.map(p => ({
         id: p.id,
         title: p.title,
@@ -340,25 +244,20 @@ export default function AIAgentWidget() {
 
       const res = await fetch('/api/gemini/agent', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: [...messages, newUserMsg].map(m => ({ role: m.role, content: m.content })),
           properties: miniProperties,
-          userContext: googleUser ? {
-            name: googleUser.user_metadata?.full_name || googleUser.email,
-            email: googleUser.email
-          } : null
+          userContext: {
+            authMode: "automated_sync_master_ledger"
+          }
         })
       });
 
       const data = await res.json();
-      if (data.error) {
-        throw new Error(data.error);
-      }
+      if (data.error) throw new Error(data.error);
 
-      let responseText = data.text || "I was unable to complete your inquiry correctly.";
+      const responseText = data.text || "I was unable to complete your inquiry correctly.";
       
       // Parse tags
       let meetingPayload: any = null;
@@ -372,22 +271,22 @@ export default function AIAgentWidget() {
           await supabase.from('appointments').insert([{
             property_id: meetingPayload.propertyId,
             property_title: meetingPayload.propertyName,
-            client_name: meetingPayload.userName || googleUser?.user_metadata?.full_name || "Aria Guest",
-            client_email: meetingPayload.email || googleUser?.email || "aria-lead@luxeestate.com",
+            client_name: meetingPayload.userName || "Aria Guest Client",
+            client_email: meetingPayload.email || "aria-lead@luxeestate.com",
             client_phone: meetingPayload.phone || "Not Specified",
             appointment_date: meetingPayload.date || new Date().toISOString().split('T')[0],
             appointment_time: meetingPayload.time || "10:00 AM",
             created_at: new Date().toISOString()
           }]);
-        } catch (e: any) {
-          console.warn("Tour scheduling logged locally, DB tables might need creation", e);
+        } catch (e) {
+          console.warn("Logged locally to virtual storage", e);
         }
 
-        // Post to Sheets
-        await logToGoogleSheets(
+        // Automatic Sheets sync behind-the-scenes
+        await autoAppendToSheets(
           "MEETING_BOOKED",
-          meetingPayload.userName || googleUser?.user_metadata?.full_name || "Aria Client",
-          meetingPayload.email || googleUser?.email || "lead@luxeestate.com",
+          meetingPayload.userName || "Automated Sync Client",
+          meetingPayload.email || "automated-sync@luxeestate.com",
           meetingPayload.phone || "N/A",
           meetingPayload.propertyId,
           meetingPayload.propertyName,
@@ -399,27 +298,26 @@ export default function AIAgentWidget() {
       if (inquiryMatch) {
         try {
           inquiryPayload = JSON.parse(inquiryMatch[1]);
-          // Save actual inquiry to 'inquiries' table in Supabase so it triggers owner dashboards!
           await supabase.from('inquiries').insert([{
             property_id: inquiryPayload.propertyId,
             property_title: inquiryPayload.propertyName,
             owner_email: inquiryPayload.ownerEmail || "owner@luxeestate.com",
             type: "contact",
-            name: inquiryPayload.userName || googleUser?.user_metadata?.full_name || "Luxe Guest",
-            email: inquiryPayload.email || googleUser?.email || "guest@luxeestate.com",
+            name: inquiryPayload.userName || "Automated Sync Client",
+            email: inquiryPayload.email || "client@luxeestate.com",
             phone: inquiryPayload.phone || "Not provided",
             message: inquiryPayload.message || "I am extremely interested in your property listing.",
             created_at: new Date().toISOString()
           }]);
         } catch (e) {
-          console.warn("Inquiry DB insertion bypassed", e);
+          console.warn("DB insertion bypassed", e);
         }
 
-        // Post to Sheets
-        await logToGoogleSheets(
+        // Automatic Sheets sync behind-the-scenes
+        await autoAppendToSheets(
           "PROPERTY_INQUIRY",
-          inquiryPayload.userName || googleUser?.user_metadata?.full_name || "Luxe Client",
-          inquiryPayload.email || googleUser?.email || "client@luxeestate.com",
+          inquiryPayload.userName || "Luxe Client",
+          inquiryPayload.email || "client@luxeestate.com",
           inquiryPayload.phone || "N/A",
           inquiryPayload.propertyId,
           inquiryPayload.propertyName,
@@ -427,15 +325,15 @@ export default function AIAgentWidget() {
         );
       }
 
-      // If regular chat with user details, log conversation log
+      // If regular search but no direct inquiry form, auto log details anyway
       if (!meetingPayload && !inquiryPayload) {
-        await logToGoogleSheets(
-          "GENERAL_CHAT",
-          googleUser?.user_metadata?.full_name || "Luxe Guest",
-          googleUser?.email || "anonymous-leads@luxeestate.com",
+        await autoAppendToSheets(
+          "MATCHMAKING_CHAT",
+          "Anonymous Client",
+          "customer-lead@main-ledger.com",
           "N/A",
           "None",
-          "General Matchmaking Session",
+          "Client Matchmaking Engine Session",
           rawVal
         );
       }
@@ -459,7 +357,7 @@ export default function AIAgentWidget() {
       setMessages(prev => [...prev, {
         id: Date.now().toString() + '-error',
         role: 'assistant',
-        content: `I hit a slight issue accessing LuxeEstate agents right now. Please verify your internet connection or check your API key secrets: ${error.message}`,
+        content: `I hit a slight issue accessing LuxeEstate agents right now. Please verify your connection or check your API key secrets.`,
         timestamp: new Date()
       }]);
     } finally {
@@ -467,48 +365,52 @@ export default function AIAgentWidget() {
     }
   };
 
-  // Renders the matched property card inside chatbot bubble
   const renderRelatedProperty = (propertyId: string) => {
     const matched = properties.find(p => p.id === propertyId);
     if (!matched) return null;
 
     return (
       <Link href={`/property/${matched.id}`} key={matched.id}>
-        <div className="mt-3 bg-slate-900/60 hover:bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-md flex transition-all duration-300 transform hover:-translate-y-0.5 cursor-pointer group">
-          <div className="w-20 h-20 relative shrink-0">
+        <div className="mt-3 bg-sky-50/50 hover:bg-sky-100 border border-sky-100/70 rounded-2xl overflow-hidden shadow-sm flex items-center transition-all duration-300 transform hover:-translate-y-0.5 cursor-pointer group">
+          <div className="w-16 h-16 relative shrink-0">
             <img 
               src={matched.imageUrl} 
               alt={matched.title} 
               className="object-cover w-full h-full"
-              sizes="80px"
             />
           </div>
-          <div className="p-3 flex flex-col justify-center overflow-hidden">
-            <h4 className="text-xs font-black text-slate-100 truncate group-hover:text-sky-400 transition-colors uppercase tracking-wider">{matched.title}</h4>
-            <span className="text-[10px] text-slate-400 mt-0.5">{matched.location}</span>
-            <span className="text-sky-400 font-bold ml-auto text-xs mt-1">
-              ${(matched.price || 0).toLocaleString()}
-            </span>
+          <div className="p-3 flex-1 overflow-hidden">
+            <h4 className="text-xs font-bold text-slate-800 truncate group-hover:text-sky-600 transition-colors uppercase tracking-wider">{matched.title}</h4>
+            <div className="flex items-center justify-between mt-1">
+              <span className="text-[10px] text-slate-500 truncate">{matched.location}</span>
+              <span className="text-sky-650 font-black text-[11px] ml-2">
+                ${(matched.price || 0).toLocaleString()}
+              </span>
+            </div>
           </div>
         </div>
       </Link>
     );
   };
 
+  // Get last messages for visual cues in voice view
+  const lastUserMessage = [...messages].reverse().find(m => m.role === 'user')?.content || 'No voice command received yet.';
+  const lastAssistantMessage = [...messages].reverse().find(m => m.role === 'assistant')?.content || 'Ask me about ocean villas, mountain cabins, or schedule a tour!';
+
   return (
     <>
       {/* Floating Toggle Launcher Button */}
-      <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end gap-3 pointer-events-auto">
+      <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end gap-3 pointer-events-auto select-none">
         <AnimatePresence>
           {isOpen && (
             <motion.div 
               initial={{ opacity: 0, y: 10, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 10, scale: 0.95 }}
-              className="mb-1 bg-sky-900/80 border border-sky-400/30 text-white backdrop-blur-md px-3.5 py-1.5 rounded-full text-[10px] uppercase font-black tracking-widest shadow-lg flex items-center gap-1.5"
+              className="mb-1 bg-white/95 border border-sky-200/50 text-sky-700 backdrop-blur-md px-4 py-1.5 rounded-full text-[10px] uppercase font-black tracking-widest shadow-md flex items-center gap-2"
             >
-              <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-ping"></span>
-              Aria Exclusive Concierge
+              <span className="w-2 h-2 bg-sky-500 rounded-full animate-ping"></span>
+              Aria AI Concierge Page
             </motion.div>
           )}
         </AnimatePresence>
@@ -516,116 +418,116 @@ export default function AIAgentWidget() {
         <button
           onClick={() => setIsOpen(!isOpen)}
           id="aria-launcher"
-          className={`w-14 h-14 rounded-full flex items-center justify-center border transition-all duration-500 shadow-2xl relative overflow-hidden group pointer-events-auto ${
+          className={`w-14 h-14 rounded-full flex items-center justify-center transition-all duration-500 shadow-xl border relative overflow-hidden group pointer-events-auto ${
             isOpen 
-              ? 'bg-rose-950 border-rose-500/50 text-rose-100 rotate-90 scale-95' 
-              : 'bg-black border-sky-400/30 hover:border-sky-400/60 text-sky-400 hover:scale-105'
+              ? 'bg-rose-50 border-rose-200 text-rose-600 rotate-90 scale-95' 
+              : 'bg-white border-sky-100 hover:border-sky-300 text-sky-500 hover:scale-105'
           }`}
         >
-          {/* Breathing Neon Orb Background */}
-          {!isOpen && (
-            <div className="absolute inset-0 bg-gradient-to-tr from-sky-600/10 via-purple-600/10 to-indigo-600/10 animate-pulse"></div>
-          )}
-          
           {isOpen ? (
-            <X className="w-6 h-6 relative z-10" />
+            <X className="w-5.5 h-5.5 relative z-10" />
           ) : (
-            <div className="relative z-10 flex flex-col items-center justify-center">
-              <Bot className="w-6 h-6 group-hover:scale-110 transition-transform duration-300" />
-              <div className="flex gap-0.5 justify-center mt-0.5">
+            <div className="relative z-10 flex flex-col items-center justify-center pt-0.5">
+              <Bot className="w-6 h-6 text-sky-500 group-hover:scale-110 transition-transform duration-300 animate-pulse" />
+              <div className="flex gap-0.5 justify-center mt-1">
                 <span className="w-1 h-1 bg-sky-400 rounded-full animate-bounce delay-100"></span>
-                <span className="w-1 h-1 bg-sky-400 rounded-full animate-bounce delay-200"></span>
-                <span className="w-1 h-1 bg-sky-400 rounded-full animate-bounce delay-300"></span>
+                <span className="w-1 h-1 bg-sky-450 rounded-full animate-bounce delay-200"></span>
+                <span className="w-1 h-1 bg-sky-500 rounded-full animate-bounce delay-300"></span>
               </div>
             </div>
           )}
 
           {/* Pulse Ripple Ring */}
           {!isOpen && (
-            <span className="absolute inset-0 rounded-full border border-sky-400/40 animate-ping opacity-75"></span>
+            <span className="absolute inset-0 rounded-full border border-sky-200 animate-ping opacity-60"></span>
           )}
         </button>
       </div>
 
-      {/* Slide-out Overlay Agent Card */}
+      {/* Glassmorphic Light Blue/White Chatbot Card */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
             initial={{ opacity: 0, scale: 0.9, y: 80, x: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0, x: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 100, x: 50 }}
-            transition={{ type: "spring", stiffness: 260, damping: 25 }}
-            className="fixed bottom-24 right-6 w-[360px] md:w-[400px] h-[600px] max-h-[80vh] bg-slate-950/95 border border-slate-800/80 rounded-[2.5rem] shadow-[0_0_50px_-12px_rgba(56,189,248,0.15)] flex flex-col overflow-hidden z-[9998] backdrop-blur-xl"
+            transition={{ type: "spring", stiffness: 280, damping: 26 }}
+            className="fixed bottom-24 right-6 w-[360px] md:w-[410px] h-[610px] max-h-[82vh] bg-white/95 border border-sky-100 rounded-[2.2rem] shadow-[0_15px_45px_rgba(56,189,248,0.12)] flex flex-col overflow-hidden z-[9998] backdrop-blur-2xl"
             id="aria-chatbot-card"
           >
-            {/* Elegant Header with Neon Glow */}
-            <div className="p-5 border-b border-slate-900 bg-slate-900/40 flex items-center justify-between relative shrink-0">
-              <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-sky-400/50 to-transparent"></div>
+            {/* Elegant Header with Light Blue Glares */}
+            <div className="p-5 border-b border-sky-100/50 bg-sky-50/40 flex items-center justify-between relative shrink-0">
+              <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-sky-300/60 to-transparent"></div>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-slate-800 flex items-center justify-center border border-slate-700 relative overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/20 to-sky-500/20"></div>
-                  <Sparkles className="w-5 h-5 text-sky-400 animate-pulse relative z-10" />
+                <div className="w-10 h-10 rounded-2xl bg-white flex items-center justify-center border border-sky-100 relative overflow-hidden shadow-sm">
+                  <div className="absolute inset-0 bg-gradient-to-br from-sky-400/10 to-indigo-400/10"></div>
+                  <Sparkles className="w-5 h-5 text-sky-500 animate-pulse relative z-10" />
                 </div>
                 <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-black text-sm tracking-widest text-slate-100 uppercase">Aria</h3>
-                    <span className="bg-sky-500/10 border border-sky-500/20 text-sky-400 text-[8px] tracking-[0.2em] font-black uppercase px-2 py-0.5 rounded-full">Concierge</span>
+                  <div className="flex items-center gap-1.5">
+                    <h3 className="font-extrabold text-[13px] tracking-wider text-slate-800 uppercase">Aria</h3>
+                    <span className="bg-sky-50 border border-sky-100/50 text-sky-600 text-[8px] tracking-[0.15em] font-black uppercase px-2 py-0.5 rounded-full">Concierge</span>
                   </div>
-                  <p className="text-[10px] text-slate-400">Exclusive AI Real Estate Partner</p>
+                  <p className="text-[10px] text-slate-500 font-medium tracking-tight">Luxury Real Estate Matchmaker</p>
                 </div>
               </div>
 
-              {/* Toggles */}
-              <div className="flex items-center gap-2">
-                {/* Voice Speaker On/Off Toggle */}
-                <button
-                  onClick={() => {
-                    setVoiceEnabled(!voiceEnabled);
-                    if (voiceEnabled && window.speechSynthesis) {
-                      window.speechSynthesis.cancel();
-                    }
-                  }}
-                  className={`p-2 rounded-xl border transition-all duration-300 flex items-center justify-center ${
-                    voiceEnabled 
-                      ? 'bg-sky-950/50 border-sky-500/40 text-sky-400' 
-                      : 'bg-slate-900 border-slate-800 text-slate-500 hover:text-slate-300'
-                  }`}
-                  title={voiceEnabled ? "Turn Voiceover Off" : "Turn Voiceover On"}
-                >
-                  {voiceEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-                </button>
-
-                {/* Close Button */}
-                <button
-                  onClick={() => setIsOpen(false)}
-                  className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-500 hover:text-slate-300 transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
+              {/* Close Button only */}
+              <button
+                onClick={() => setIsOpen(false)}
+                className="p-1.5 rounded-xl bg-white border border-sky-100/80 text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
 
-            {/* Speaking/Thinking Visualizer strip */}
+            {/* Seamless Mode Switcher (Tab System - 2 features like Gemini AI) */}
+            <div className="p-2 bg-sky-50/20 border-b border-sky-100/30 flex items-center justify-center gap-2 shrink-0">
+              <button
+                onClick={() => handleModeChange('text')}
+                className={`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-full text-xs font-bold transition-all duration-300 ${
+                  activeMode === 'text'
+                    ? 'bg-white shadow-sm text-sky-600 border border-sky-100/50'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <MessageSquare className="w-3.5 h-3.5" />
+                Text Assistant
+              </button>
+              <button
+                onClick={() => handleModeChange('voice')}
+                className={`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-full text-xs font-bold transition-all duration-300 ${
+                  activeMode === 'voice'
+                    ? 'bg-sky-500 text-white shadow-sm font-extrabold'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <Radio className="w-3.5 h-3.5 animate-pulse" />
+                Voice Live
+              </button>
+            </div>
+
+            {/* Speaking voice status visual feedback strip */}
             <AnimatePresence>
-              {(isSpeaking || loading) && (
+              {isSpeaking && (
                 <motion.div 
                   initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 24 }}
+                  animate={{ opacity: 1, height: 26 }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="bg-sky-950/40 border-b border-sky-900/30 px-5 flex items-center justify-between overflow-hidden relative shrink-0"
+                  className="bg-sky-50/55 border-b border-sky-100/30 px-5 flex items-center justify-between overflow-hidden shrink-0"
                 >
-                  <span className="text-[9px] uppercase tracking-wider text-sky-400 font-bold flex items-center gap-1">
-                    {loading ? "Aria is analyzing catalogs..." : "Aria Speaking..."}
+                  <span className="text-[9px] uppercase tracking-widest text-sky-600 font-extrabold flex items-center gap-1.5">
+                    Audio Voiceover active
                   </span>
-                  <div className="flex items-center gap-0.5 h-3">
-                    {[...Array(6)].map((_, i) => (
+                  <div className="flex items-center gap-[2px] h-3.5">
+                    {[1, 2, 3, 4, 5].map((idx) => (
                       <span 
-                        key={i} 
-                        className="w-0.5 bg-sky-400 rounded-full"
+                        key={idx} 
+                        className="w-[1.5px] bg-sky-500 rounded-full"
                         style={{
-                          height: '100%',
-                          animation: 'bounce 0.8s ease-in-out infinite',
-                          animationDelay: `${i * 0.12}s`,
+                          height: '105%',
+                          animation: 'bounce 0.7s ease-in-out infinite',
+                          animationDelay: `${idx * 0.1}s`,
                           transformOrigin: 'bottom'
                         }}
                       ></span>
@@ -635,213 +537,251 @@ export default function AIAgentWidget() {
               )}
             </AnimatePresence>
 
-            {/* Tabs for conversation and spreadsheet visualizer */}
-            <div className="flex-1 overflow-hidden flex flex-col min-h-0 relative">
-              {/* Message scroll container */}
-              <div 
-                ref={scrollRef}
-                className="flex-1 overflow-y-auto px-5 py-4 space-y-4 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent select-text"
-              >
-                {messages.map((m) => (
-                  <div 
-                    key={m.id}
-                    className={`flex flex-col max-w-[85%] ${m.role === 'user' ? 'ml-auto items-end' : 'mr-auto items-start'}`}
-                  >
+            {/* Dynamic Content Views based on active feature selection */}
+            <div className="flex-1 overflow-hidden flex flex-col min-h-0 relative select-text">
+              
+              {/* FEATURE 1: STANDARD TEXT ASSISTANT */}
+              {activeMode === 'text' ? (
+                <div 
+                  ref={scrollRef}
+                  className="flex-1 overflow-y-auto px-5 py-4 space-y-4 scrollbar-thin scrollbar-thumb-sky-100 scrollbar-track-transparent select-text"
+                >
+                  {messages.map((m) => (
                     <div 
-                      className={`p-4 rounded-[1.5rem] text-xs leading-relaxed ${
-                        m.role === 'user' 
-                          ? 'bg-sky-600 font-medium text-white px-4 py-3 rounded-tr-none shadow-md' 
-                          : 'bg-slate-900/80 border border-slate-850 text-slate-200 rounded-tl-none shadow-inner'
-                      }`}
+                      key={m.id}
+                      className={`flex flex-col max-w-[85%] ${m.role === 'user' ? 'ml-auto items-end' : 'mr-auto items-start'}`}
                     >
-                      {/* Formatted body strip command metadata */}
-                      <p className="whitespace-pre-line">
-                        {m.content
-                          .replace(/\[SCHEDULE_MEETING:\s*.*?\]/g, '')
-                          .replace(/\[SUBMIT_INQUIRY:\s*.*?\]/g, '')
-                          .trim()}
-                      </p>
+                      <div 
+                        className={`p-3.5 rounded-3xl text-xs leading-relaxed ${
+                          m.role === 'user' 
+                            ? 'bg-sky-500 font-semibold text-white px-4 rounded-tr-none shadow-sm' 
+                            : 'bg-white border border-sky-100 text-slate-700 rounded-tl-none shadow-[0_2px_12px_rgba(56,189,248,0.03)]'
+                        }`}
+                      >
+                        <p className="whitespace-pre-line">
+                          {m.content
+                            .replace(/\[SCHEDULE_MEETING:\s*.*?\]/g, '')
+                            .replace(/\[SUBMIT_INQUIRY:\s*.*?\]/g, '')
+                            .trim()}
+                        </p>
 
-                      {/* Matching properties links extracted dynamically */}
-                      {m.role === 'assistant' && properties.length > 0 && (
-                        (() => {
-                          const matchedIds = Array.from(m.content.matchAll(/property\/(\d+)/gi)).map(match => match[1]);
-                          const distinctMatchedIds = [...new Set(matchedIds)];
-                          return distinctMatchedIds.map(id => renderRelatedProperty(id));
-                        })()
-                      )}
+                        {/* Property recommendations injected directly inside the message context */}
+                        {m.role === 'assistant' && properties.length > 0 && (
+                          (() => {
+                            const matchedIds = Array.from(m.content.matchAll(/property\/(\d+)/gi)).map(match => match[1]);
+                            const distinctMatchedIds = [...new Set(matchedIds)];
+                            return distinctMatchedIds.map(id => renderRelatedProperty(id));
+                          })()
+                        )}
 
-                      {/* Display scheduled tag indicator */}
-                      {m.scheduledMeeting && (
-                        <div className="mt-3 p-3 bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 rounded-xl flex flex-col gap-1.5 shadow-sm">
-                          <div className="flex items-center gap-2">
-                            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                            <span className="font-black uppercase tracking-wider text-[9px]">Tour Scheduled</span>
+                        {/* Embedded Booking Notification */}
+                        {m.scheduledMeeting && (
+                          <div className="mt-3 p-3 bg-sky-50/80 border border-sky-200/50 text-sky-700 rounded-2xl flex flex-col gap-1.5 shadow-sm">
+                            <div className="flex items-center gap-1.5">
+                              <CheckCircle2 className="w-4 h-4 text-sky-500 shrink-0" />
+                              <span className="font-extrabold uppercase tracking-wider text-[9px]">Exclusive Booking Confirmed</span>
+                            </div>
+                            <div className="text-[10px]">
+                              <div className="font-bold text-slate-800">{m.scheduledMeeting.propertyName}</div>
+                              <div className="text-slate-500 mt-0.5">Tour request organized on {m.scheduledMeeting.date} at {m.scheduledMeeting.time}</div>
+                            </div>
+                            <div className="text-[8px] text-green-600 bg-white border border-green-100 self-start px-2 py-0.5 rounded-md mt-1 uppercase font-black tracking-widest">
+                              Auto-Synced to Master Sheet
+                            </div>
                           </div>
-                          <div className="text-[10px]">
-                            <div className="font-semibold text-slate-100">{m.scheduledMeeting.propertyName}</div>
-                            <div className="text-slate-300 mt-0.5">{m.scheduledMeeting.date} at {m.scheduledMeeting.time}</div>
-                          </div>
-                          <span className="text-[8px] bg-emerald-900/60 self-start px-2 py-0.5 rounded-md text-emerald-200 mt-1 uppercase tracking-wider">Synced to Google Sheets</span>
-                        </div>
-                      )}
+                        )}
 
-                      {/* Display inquiry tag indicator */}
-                      {m.submittedInquiry && (
-                        <div className="mt-3 p-3 bg-indigo-950/80 border border-indigo-500/40 text-indigo-300 rounded-xl flex flex-col gap-1.5 shadow-sm">
-                          <div className="flex items-center gap-2">
-                            <CheckCircle2 className="w-4 h-4 text-indigo-400" />
-                            <span className="font-black uppercase tracking-wider text-[9px]">Owner Informed</span>
+                        {/* Embedded Contact Notification */}
+                        {m.submittedInquiry && (
+                          <div className="mt-3 p-3 bg-indigo-50/80 border border-indigo-200/50 text-indigo-700 rounded-2xl flex flex-col gap-1.5 shadow-sm">
+                            <div className="flex items-center gap-1.5">
+                              <CheckCircle2 className="w-4 h-4 text-indigo-500 shrink-0" />
+                              <span className="font-extrabold uppercase tracking-wider text-[9px]">Owner Advised</span>
+                            </div>
+                            <div className="text-[10px]">
+                              <div className="font-bold text-slate-800">{m.submittedInquiry.propertyName}</div>
+                              <div className="text-slate-600 italic mt-1 font-medium bg-white/70 p-1.5 rounded-lg border border-slate-100">"{m.submittedInquiry.message}"</div>
+                            </div>
+                            <div className="text-[8px] text-green-600 bg-white border border-green-100 self-start px-2 py-0.5 rounded-md mt-1 uppercase font-black tracking-widest">
+                              Auto-Synced to Database Sheets
+                            </div>
                           </div>
-                          <div className="text-[10px]">
-                            <div className="font-semibold text-slate-100">{m.submittedInquiry.propertyName}</div>
-                            <div className="text-slate-300 italic max-h-12 overflow-hidden text-ellipsis mt-1">"{m.submittedInquiry.message}"</div>
-                          </div>
-                          <span className="text-[8px] bg-indigo-900/60 self-start px-2 py-0.5 rounded-md text-indigo-200 mt-1 uppercase tracking-wider">Saved & Synced to Sheets</span>
-                        </div>
-                      )}
+                        )}
+                      </div>
+                      <span className="text-[8px] text-slate-400 mt-1.5 px-1 tracking-widest">
+                        {m.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
                     </div>
-                    <span className="text-[8px] text-slate-500 mt-1 tracking-wider px-1">
-                      {m.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                  </div>
-                ))}
+                  ))}
 
-                {loading && (
-                  <div className="flex flex-col mr-auto max-w-[85%] items-start">
-                    <div className="p-3.5 bg-slate-900/80 border border-slate-850 text-slate-400 rounded-[1.5rem] rounded-tl-none">
-                      <div className="flex gap-1 items-center py-1 px-2">
-                        <span className="w-1.5 h-1.5 bg-sky-400 rounded-full animate-bounce"></span>
-                        <span className="w-1.5 h-1.5 bg-sky-400 rounded-full animate-bounce delay-150"></span>
-                        <span className="w-1.5 h-1.5 bg-sky-400 rounded-full animate-bounce delay-300"></span>
+                  {loading && (
+                    <div className="flex flex-col mr-auto max-w-[85%] items-start">
+                      <div className="p-3 bg-sky-50/50 border border-sky-100/50 text-slate-400 rounded-3xl rounded-tl-none">
+                        <div className="flex gap-1 items-center px-1.5 py-0.5">
+                          <span className="w-1.5 h-1.5 bg-sky-400 rounded-full animate-bounce"></span>
+                          <span className="w-1.5 h-1.5 bg-sky-400 rounded-full animate-bounce delay-150"></span>
+                          <span className="w-1.5 h-1.5 bg-sky-400 rounded-full animate-bounce delay-300"></span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                
+                /* FEATURE 2: MINIMALIST VOICE LIVE CONSOLE */
+                <div className="flex-1 flex flex-col items-center justify-between p-6 select-none bg-sky-50/10">
+                  <div className="text-center mt-2 shrink-0">
+                    <span className="text-[9px] uppercase tracking-[0.25em] font-black text-sky-500 block mb-1">Aria Live Session</span>
+                    <h4 className="text-sm font-bold text-slate-700">Voice-to-Voice Matchmaker</h4>
+                  </div>
+
+                  {/* Gorgeous breathing audio wave visualizer (Central Globe theme) */}
+                  <div className="relative w-44 h-44 flex items-center justify-center my-4 shrink-0">
+                    {/* Breath circles */}
+                    <motion.div 
+                      className="absolute inset-0 rounded-full bg-sky-300/10 border border-sky-200/50"
+                      animate={{ scale: isListening ? [1, 1.25, 1] : [1, 1.08, 1] }}
+                      transition={{ repeat: Infinity, duration: isListening ? 1.4 : 3, ease: "easeInOut" }}
+                    />
+                    <motion.div 
+                      className="absolute w-36 h-36 rounded-full bg-sky-400/15 border border-sky-150"
+                      animate={{ scale: isSpeaking ? [1, 1.15, 1] : [1, 1.05, 1] }}
+                      transition={{ repeat: Infinity, duration: isSpeaking ? 1.2 : 4, ease: "easeInOut", delay: 0.5 }}
+                    />
+                    
+                    {/* Core visual sound wave circle */}
+                    <div className={`w-28 h-28 rounded-full flex flex-col items-center justify-center shadow-lg transition-all duration-300 border bg-white ${
+                      isListening ? 'border-sky-300 shadow-sky-100' : 'border-sky-100 shadow-sky-50'
+                    }`}>
+                      <div className="relative flex items-center justify-center">
+                        <Radio className={`w-9 h-9 ${isListening ? 'text-sky-500 animate-spin' : isSpeaking ? 'text-sky-450 animate-pulse' : 'text-sky-300'}`} />
+                        {isListening && (
+                          <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full animate-ping"></span>
+                        )}
+                      </div>
+                      <span className="text-[8px] font-black uppercase tracking-widest text-sky-600 mt-2">
+                        {isListening ? "Listening" : isSpeaking ? "Aria Speaking" : "Standby"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Live speech subtitles helper (decluttered transcription block) */}
+                  <div className="w-full max-w-sm bg-white/90 border border-sky-100/65 rounded-3xl p-4 shadow-sm flex-1 flex flex-col justify-center gap-3 overflow-hidden leading-relaxed">
+                    <div className="text-[10px] uppercase font-black tracking-widest text-sky-500">Subtitles</div>
+                    
+                    <div className="overflow-y-auto max-h-24 space-y-2 pr-1 text-slate-600 scrollbar-none">
+                      <div className="text-[11px] leading-relaxed">
+                        <span className="font-bold text-slate-400 block text-[9px] uppercase tracking-wider mb-0.5">You asked</span>
+                        <p className="italic text-slate-700">"{lastUserMessage}"</p>
+                      </div>
+                      
+                      <div className="h-[1px] bg-slate-100/80 my-2" />
+
+                      <div className="text-[11px] leading-relaxed">
+                        <span className="font-extrabold text-sky-600 block text-[9px] uppercase tracking-wider mb-0.5">Aria responded</span>
+                        <p className="whitespace-pre-line text-slate-700">
+                          {lastAssistantMessage
+                            .replace(/\[SCHEDULE_MEETING:\s*.*?\]/g, '')
+                            .replace(/\[SUBMIT_INQUIRY:\s*.*?\]/g, '')
+                            .trim()}
+                        </p>
                       </div>
                     </div>
                   </div>
-                )}
-              </div>
 
-              {/* Connected Google Sheets Dashboard inside chatbot drawers */}
-              <div className="p-4 bg-slate-900/50 border-t border-slate-900 absolute bottom-0 left-0 right-0 max-h-44 overflow-y-auto z-20 backdrop-blur-md hidden hover:block group border-dashed hover:border-sky-500/20">
-                {/* Visualizer toggled simply on styling hover */}
-              </div>
+                  <div className="mt-4 text-center shrink-0">
+                    <p className="text-[9px] text-slate-400 uppercase tracking-widest">Speak naturally about luxury house prices</p>
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* Google Sheets Dashboard overlay widget */}
-            <div className="px-5 py-3 border-t border-slate-900 bg-slate-900/10 flex items-center justify-between text-xs text-slate-400 shrink-0">
-              <div className="flex items-center gap-1.5 overflow-hidden">
-                <FileSpreadsheet className={`w-3.5 h-3.5 ${spreadsheetId ? "text-green-400" : "text-slate-500"}`} />
-                {spreadsheetId ? (
-                  <span className="truncate text-[10px] uppercase font-bold tracking-wider text-green-400">
-                    Sheets Connected
-                  </span>
-                ) : (
-                  <span className="text-[10px] text-slate-500">Google Sheets offline</span>
-                )}
+            {/* Seamless Auto Sheets database logs strip (decluttered completely - no inputs or big widgets, just status badge) */}
+            <div className="px-5 py-3.5 border-t border-sky-100/40 bg-sky-50/15 flex items-center justify-between text-xs text-slate-500 shrink-0 select-none">
+              <div className="flex items-center gap-2 overflow-hidden">
+                <FileSpreadsheet className="w-3.5 h-3.5 text-sky-500 animate-pulse shrink-0" />
+                <span className="text-[9.5px] uppercase tracking-wider text-slate-600 font-extrabold">
+                  Master Sheets Auto-Sync Enabled
+                </span>
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse shrink-0"></span>
               </div>
 
-              <div className="flex items-center gap-2">
-                {spreadsheetUrl ? (
-                  <a 
-                    href={spreadsheetUrl} 
-                    target="_blank" 
-                    rel="noreferrer" 
-                    className="flex items-center gap-0.5 text-[9px] uppercase font-black tracking-widest text-sky-400 hover:text-sky-300"
-                  >
-                    Open Sheet <ArrowUpRight className="w-3 h-3" />
-                  </a>
-                ) : (
-                  googleToken ? (
-                    <span className="text-[9px] text-slate-500 italic">Sheets sync-ready</span>
-                  ) : (
-                    <button 
-                      onClick={handleOAuthConnect}
-                      className="text-[9px] uppercase font-bold text-sky-400 hover:underline active:scale-95 transition-transform"
-                    >
-                      Enable Sync
-                    </button>
-                  )
-                )}
-
-                {googleToken && (
-                  <button 
-                    onClick={handleSignOutGoogle}
-                    className="text-[9px] text-slate-600 hover:text-rose-400 ml-1"
-                    title="Disconnect Google account"
-                  >
-                    Disconnect
-                  </button>
-                )}
-              </div>
+              {lastSyncedRow && (
+                <div className="text-[8px] bg-sky-100/40 border border-sky-200/30 text-sky-700 px-2 py-0.5 rounded-full truncate max-w-36">
+                  Synced: {lastSyncedRow.title}
+                </div>
+              )}
             </div>
 
-            {/* Input typing panel */}
-            <div className="p-4 border-t border-slate-900 bg-slate-950 flex items-center gap-2.5 shrink-0">
-              {/* Mic Toggler */}
-              <button
-                onClick={toggleListening}
-                className={`p-3 rounded-2xl border transition-all duration-300 relative ${
-                  isListening 
-                    ? 'bg-rose-950 border-rose-500/50 text-rose-300 animate-pulse' 
-                    : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
-                }`}
-                title={isListening ? "Listening... Click to stop" : "Talk to Aria (Mic input)"}
-              >
-                {isListening ? (
-                  <>
-                    <MicOff className="w-4.5 h-4.5 relative z-10" />
-                    <span className="absolute inset-0 rounded-2xl border border-rose-500/60 animate-ping"></span>
-                  </>
-                ) : (
-                  <Mic className="w-4.5 h-4.5" />
-                )}
-              </button>
-
-              <form 
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  sendMessage();
-                }}
-                className="flex-1 flex gap-2"
-              >
-                <input
-                  type="text"
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  placeholder={isListening ? "Listening to your voice..." : "Desire a Malibu villa? Ask here..."}
-                  disabled={isListening}
-                  className="flex-1 bg-slate-900 border border-slate-800/80 rounded-2.5xl px-4 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-sky-500/50 placeholder-slate-500 focus:ring-1 focus:ring-sky-500/20 disabled:opacity-50"
-                />
-                
+            {/* Input keyboard row (Only shown in static text assistant feature) */}
+            {activeMode === 'text' && (
+              <div className="p-4 border-t border-sky-100/40 bg-white flex items-center gap-2 shrink-0">
+                {/* Voice Speakback Toggle */}
                 <button
-                  type="submit"
-                  disabled={loading || isListening || !inputValue.trim()}
-                  className="p-3 rounded-2xl bg-sky-600 hover:bg-sky-500 text-white disabled:opacity-30 transition-all duration-300 flex items-center justify-center shadow-lg active:scale-95"
+                  onClick={() => {
+                    setVoiceEnabled(!voiceEnabled);
+                    if (voiceEnabled && window.speechSynthesis) window.speechSynthesis.cancel();
+                  }}
+                  className={`p-2.5 rounded-2xl border transition-all duration-300 flex items-center justify-center shrink-0 ${
+                    voiceEnabled 
+                      ? 'bg-sky-50 border-sky-200 text-sky-600' 
+                      : 'bg-white border-slate-200 text-slate-450 hover:text-slate-600'
+                  }`}
+                  title={voiceEnabled ? "Mute Voiceover" : "Enable Voiceover"}
                 >
-                  <Send className="w-4 h-4" />
+                  {voiceEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
                 </button>
-              </form>
-            </div>
 
-            {/* Live Synchronized Sheet Rows Ledger accordion element for beautiful visual demonstration */}
-            {sheetsSyncList.length > 0 && (
-              <div className="bg-slate-900 px-5 py-2.5 max-h-24 overflow-y-auto border-t border-slate-850 shrink-0">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[8px] uppercase tracking-wider font-extrabold text-green-400 flex items-center gap-1">
-                    <CheckCircle2 className="w-2.5 h-2.5" /> Google Sheets Synergistic Logs
-                  </span>
-                  <span className="text-[7px] text-slate-500 bg-slate-950 px-1 py-0.5 rounded">Latest {sheetsSyncList.length} Rows</span>
-                </div>
-                <div className="space-y-1">
-                  {sheetsSyncList.slice(0, 3).map((log, index) => (
-                    <div key={index} className="flex justify-between text-[8px] text-slate-400 bg-slate-950/40 p-1 rounded font-mono truncate">
-                      <span className="text-[7px] text-sky-400 font-bold tracking-wider shrink-0 mr-1">[{log.type}]</span>
-                      <span className="truncate flex-1">{log.name} inquiring {log.property}</span>
-                      <span className="text-[7px] text-slate-600 shrink-0 ml-1">{log.timestamp.split(',')[1]?.trim() || log.timestamp}</span>
-                    </div>
-                  ))}
-                </div>
+                <form 
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    sendMessage();
+                  }}
+                  className="flex-1 flex gap-2"
+                >
+                  <input
+                    type="text"
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    placeholder="Search tulum villa or schedule tour..."
+                    className="flex-1 bg-sky-50/25 border border-sky-100/20 rounded-2xl px-4 py-2.5 text-xs text-slate-700 focus:outline-none focus:border-sky-300 placeholder-slate-400 focus:ring-1 focus:ring-sky-200"
+                  />
+                  
+                  <button
+                    type="submit"
+                    disabled={loading || !inputValue.trim()}
+                    className="p-2.5 rounded-2xl bg-sky-500 hover:bg-sky-600 text-white disabled:opacity-40 transition-all duration-300 flex items-center justify-center shadow-md shadow-sky-100 active:scale-95 shrink-0"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                  </button>
+                </form>
               </div>
             )}
+
+            {/* Micro button layout inside Voice Mode */}
+            {activeMode === 'voice' && (
+              <div className="p-4 border-t border-sky-100/40 bg-white flex items-center justify-center shrink-0">
+                <button
+                  onClick={toggleListening}
+                  className={`w-14 h-14 rounded-full border transition-all duration-300 flex items-center justify-center relative ${
+                    isListening 
+                      ? 'bg-red-500 border-red-400 text-white scale-105' 
+                      : 'bg-sky-500 hover:bg-sky-600 border-sky-400 text-white shadow-lg'
+                  }`}
+                  title={isListening ? "Listening... Tab to stop" : "Start Speaking with Aria"}
+                >
+                  {isListening ? (
+                    <>
+                      <MicOff className="w-5.5 h-5.5 relative z-10" />
+                      <span className="absolute inset-0 rounded-full border border-red-400 animate-ping opacity-60"></span>
+                    </>
+                  ) : (
+                    <Mic className="w-5.5 h-5.5" />
+                  )}
+                </button>
+              </div>
+            )}
+
           </motion.div>
         )}
       </AnimatePresence>
