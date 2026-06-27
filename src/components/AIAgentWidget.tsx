@@ -3,8 +3,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  Bot, MessageSquare, Mic, MicOff, Volume2, VolumeX, X, Send, 
-  Sparkles, CheckCircle2, FileSpreadsheet, Radio, Smartphone 
+  Bot, Radio, X, Send, Sparkles, CheckCircle2, FileSpreadsheet, 
+  Copy, ExternalLink, Settings, Mic, MicOff, Volume2, VolumeX, MessageSquare, ArrowRight, ShieldCheck, Database
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { Property } from '@/types';
@@ -28,13 +28,20 @@ interface Message {
 
 export default function AIAgentWidget() {
   const [isOpen, setIsOpen] = useState(false);
-  const [activeMode, setActiveMode] = useState<'text' | 'voice'>('text');
+  const [activeTab, setActiveTab] = useState<'agent' | 'architecture'>('agent');
   
+  // ElevenLabs Agent ID Configuration
+  const [agentId, setAgentId] = useState<string>('');
+  const [inputAgentId, setInputAgentId] = useState<string>('');
+  const [isScriptLoaded, setIsScriptLoaded] = useState(false);
+  const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
+
+  // Fallback Simulation State (when testing before pasting ElevenLabs ID)
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'welcome',
       role: 'assistant',
-      content: "Hello! I am Aria, your AI Concierge. I can help you explore our luxury estates, answer specifications, schedule viewings, or directly contact property owners. Try typing or toggle 'Voice Live' to talk directly with me!",
+      content: "Welcome to LuxeEstate. I am Aria, your AI Voice Concierge. Connect your ElevenLabs Conversational Voice Agent or try our Instant Voice Simulation below to explore villas, pricing, and book private showings!",
       timestamp: new Date()
     }
   ]);
@@ -44,14 +51,40 @@ export default function AIAgentWidget() {
   const [voiceEnabled, setVoiceEnabled] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [properties, setProperties] = useState<Property[]>([]);
-  
-  // Auto-sync status feedback
-  const [lastSyncedRow, setLastSyncedRow] = useState<any>(null);
+  const [lastSyncedNotification, setLastSyncedNotification] = useState<string | null>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
 
-  // Load LuxeEstate listings for search logic
+  // Load saved ElevenLabs Agent ID on mount
+  useEffect(() => {
+    const envAgentId = process.env.NEXT_PUBLIC_ELEVENLABS_AGENT_ID;
+    const localAgentId = localStorage.getItem('luxeestate_elevenlabs_agent_id');
+    const activeId = localAgentId || envAgentId || '';
+    if (activeId) {
+      setAgentId(activeId);
+      setInputAgentId(activeId);
+    }
+  }, []);
+
+  // Dynamically load ElevenLabs ConvAI widget script when agentId is present
+  useEffect(() => {
+    if (!agentId) return;
+
+    const existingScript = document.querySelector('script[src="https://elevenlabs.io/convai-widget/index.js"]');
+    if (!existingScript) {
+      const script = document.createElement('script');
+      script.src = 'https://elevenlabs.io/convai-widget/index.js';
+      script.async = true;
+      script.type = 'text/javascript';
+      script.onload = () => setIsScriptLoaded(true);
+      document.body.appendChild(script);
+    } else {
+      setIsScriptLoaded(true);
+    }
+  }, [agentId]);
+
+  // Load properties for simulation catalog
   useEffect(() => {
     const loadProperties = async () => {
       try {
@@ -74,20 +107,20 @@ export default function AIAgentWidget() {
           setProperties(formatted);
         }
       } catch (err) {
-        console.warn("Using fallback listings", err);
+        console.warn("Using default listings", err);
       }
     };
     loadProperties();
   }, []);
 
-  // Sync scroll on updates
+  // Sync scroll
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages, loading, activeMode]);
+  }, [messages, loading, activeTab]);
 
-  // Voice Speech Recog Setup
+  // Speech Recog for fallback simulation
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
@@ -96,26 +129,16 @@ export default function AIAgentWidget() {
       rec.interimResults = false;
       rec.lang = 'en-US';
 
-      rec.onstart = () => {
-        setIsListening(true);
-      };
-
-      rec.onresult = (event: any) => {
-        const text = event.results[0][0].transcript;
+      rec.onstart = () => setIsListening(true);
+      rec.onresult = (e: any) => {
+        const text = e.results[0][0].transcript;
         if (text.trim()) {
           setInputValue('');
-          sendMessage(text);
+          sendSimulationMessage(text);
         }
       };
-
-      rec.onerror = (err: any) => {
-        console.error("Speech Recognition Error:", err);
-        setIsListening(false);
-      };
-
-      rec.onend = () => {
-        setIsListening(false);
-      };
+      rec.onerror = () => setIsListening(false);
+      rec.onend = () => setIsListening(false);
 
       recognitionRef.current = rec;
     }
@@ -123,283 +146,163 @@ export default function AIAgentWidget() {
 
   const toggleListening = () => {
     if (!recognitionRef.current) {
-      alert("Mic input is not fully supported in this container browser setup. Please type instead!");
+      alert("Mic input is restricted in this container browser preview. Please type below!");
       return;
     }
-
-    if (isListening) {
-      recognitionRef.current.stop();
-    } else {
+    if (isListening) recognitionRef.current.stop();
+    else {
       setIsListening(true);
       recognitionRef.current.start();
     }
   };
 
-  // Convert text output to high-end spoken synthesis
   const speakResponse = (text: string) => {
-    if (!window.speechSynthesis) return;
-
-    window.speechSynthesis.cancel(); // Clears queue
-
+    if (!voiceEnabled || !window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
     const cleanSpeech = text
       .replace(/\[SCHEDULE_MEETING:\s*.*?\]/g, '')
       .replace(/\[SUBMIT_INQUIRY:\s*.*?\]/g, '')
       .trim();
-
     if (!cleanSpeech) return;
 
-    const utterance = new SpeechSynthesisUtterance(cleanSpeech);
-    utterance.onstart = () => setIsSpeaking(true);
-    utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => setIsSpeaking(false);
-
-    const utterances = window.speechSynthesis.getVoices();
-    const premiumVoice = utterances.find(v => 
-      v.name.includes("Google US English") || 
-      v.name.includes("Samantha") || 
-      v.lang.startsWith("en")
-    );
-    if (premiumVoice) utterance.voice = premiumVoice;
-    utterance.rate = 1.0;
-    utterance.pitch = 1.05;
-
-    window.speechSynthesis.speak(utterance);
+    const utt = new SpeechSynthesisUtterance(cleanSpeech);
+    utt.onstart = () => setIsSpeaking(true);
+    utt.onend = () => setIsSpeaking(false);
+    utt.onerror = () => setIsSpeaking(false);
+    const voices = window.speechSynthesis.getVoices();
+    const bestVoice = voices.find(v => v.name.includes("Google US English") || v.name.includes("Samantha"));
+    if (bestVoice) utt.voice = bestVoice;
+    utt.rate = 1.0;
+    utt.pitch = 1.05;
+    window.speechSynthesis.speak(utt);
   };
 
-  // Trigger server-side background synchronization automatically for leads
+  // Background sync for fallback simulation
   const autoAppendToSheets = async (type: string, name: string, email: string, phone: string, propertyId: string, propertyTitle: string, message: string) => {
     try {
-      const payload = {
-        type,
-        name: name || "Luxe Guest",
-        email: email || "automatic-sync@luxeestate.com",
-        phone: phone || "No Phone Provided",
-        propertyId,
-        propertyTitle,
-        message
-      };
-
+      const payload = { type, name: name || "Voice Client", email: email || "voice-sync@luxeestate.com", phone: phone || "N/A", propertyId, propertyTitle, message };
       const res = await fetch('/api/sheets/append', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-
       const data = await res.json();
       if (data.success) {
-        setLastSyncedRow({
-          type,
-          title: propertyTitle || "General Chat Matchmaking",
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        });
+        setLastSyncedNotification(`Auto-Synced: ${propertyTitle || 'Consultation Log'}`);
+        setTimeout(() => setLastSyncedNotification(null), 5000);
       }
     } catch (err) {
-      console.warn("Background sheet auto sync triggered safely:", err);
+      console.warn("Background auto sync handled safely", err);
     }
   };
 
-  // Switch voice mode, enable sound responses automatically
-  const handleModeChange = (mode: 'text' | 'voice') => {
-    setActiveMode(mode);
-    if (mode === 'voice') {
-      setVoiceEnabled(true);
-      // Give spoken confirmation
-      setTimeout(() => {
-        speakResponse("Voice session initiated. Tap the microphone to talk with me!");
-      }, 300);
-    } else {
-      setVoiceEnabled(false);
-      if (window.speechSynthesis) window.speechSynthesis.cancel();
-    }
-  };
-
-  const sendMessage = async (textToSend?: string) => {
+  const sendSimulationMessage = async (textToSend?: string) => {
     const rawVal = textToSend || inputValue;
     if (!rawVal.trim()) return;
 
     setInputValue('');
     const userMsgId = Date.now().toString() + '-user';
-    const newUserMsg: Message = {
-      id: userMsgId,
-      role: 'user',
-      content: rawVal,
-      timestamp: new Date()
-    };
-
+    const newUserMsg: Message = { id: userMsgId, role: 'user', content: rawVal, timestamp: new Date() };
     setMessages(prev => [...prev, newUserMsg]);
     setLoading(true);
 
     if (window.speechSynthesis) window.speechSynthesis.cancel();
 
     try {
-      const miniProperties = properties.map(p => ({
-        id: p.id,
-        title: p.title,
-        price: p.price,
-        location: p.location,
-        type: p.type,
-        features: p.features,
-        submittedBy: p.submittedBy
-      }));
-
+      const miniProps = properties.map(p => ({ id: p.id, title: p.title, price: p.price, location: p.location, type: p.type, features: p.features }));
       const res = await fetch('/api/gemini/agent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: [...messages, newUserMsg].map(m => ({ role: m.role, content: m.content })),
-          properties: miniProperties,
-          userContext: {
-            authMode: "automated_sync_master_ledger"
-          }
+          properties: miniProps,
+          userContext: { authMode: "automated_sync_master_ledger" }
         })
       });
 
       const data = await res.json();
       if (data.error) throw new Error(data.error);
 
-      const responseText = data.text || "I was unable to complete your inquiry correctly.";
+      const responseText = data.text || "I apologize, I could not complete your inquiry.";
       
-      // Parse tags
       let meetingPayload: any = null;
       let inquiryPayload: any = null;
 
-      const meetingMatch = responseText.match(/\[SCHEDULE_MEETING:\s*(\{.*?\})\]/);
-      if (meetingMatch) {
+      const meetMatch = responseText.match(/\[SCHEDULE_MEETING:\s*(\{.*?\})\]/);
+      if (meetMatch) {
         try {
-          meetingPayload = JSON.parse(meetingMatch[1]);
-          // Book meeting physically to Supabase if table exists
+          meetingPayload = JSON.parse(meetMatch[1]);
           await supabase.from('appointments').insert([{
             property_id: meetingPayload.propertyId,
             property_title: meetingPayload.propertyName,
-            client_name: meetingPayload.userName || "Aria Guest Client",
-            client_email: meetingPayload.email || "aria-lead@luxeestate.com",
-            client_phone: meetingPayload.phone || "Not Specified",
+            client_name: meetingPayload.userName || "Voice Client",
+            client_email: meetingPayload.email || "client@luxeestate.com",
+            client_phone: meetingPayload.phone || "Not provided",
             appointment_date: meetingPayload.date || new Date().toISOString().split('T')[0],
-            appointment_time: meetingPayload.time || "10:00 AM",
-            created_at: new Date().toISOString()
+            appointment_time: meetingPayload.time || "10:00 AM"
           }]);
-        } catch (e) {
-          console.warn("Logged locally to virtual storage", e);
-        }
+        } catch (e) {}
 
-        // Automatic Sheets sync behind-the-scenes
-        await autoAppendToSheets(
-          "MEETING_BOOKED",
-          meetingPayload.userName || "Automated Sync Client",
-          meetingPayload.email || "automated-sync@luxeestate.com",
-          meetingPayload.phone || "N/A",
-          meetingPayload.propertyId,
-          meetingPayload.propertyName,
-          `Tour requested on ${meetingPayload.date} at ${meetingPayload.time}`
-        );
+        await autoAppendToSheets("MEETING_BOOKED", meetingPayload.userName || "Voice Guest", meetingPayload.email || "client@luxeestate.com", meetingPayload.phone || "N/A", meetingPayload.propertyId, meetingPayload.propertyName, `Tour scheduled on ${meetingPayload.date} at ${meetingPayload.time}`);
       }
 
-      const inquiryMatch = responseText.match(/\[SUBMIT_INQUIRY:\s*(\{.*?\})\]/);
-      if (inquiryMatch) {
+      const inqMatch = responseText.match(/\[SUBMIT_INQUIRY:\s*(\{.*?\})\]/);
+      if (inqMatch) {
         try {
-          inquiryPayload = JSON.parse(inquiryMatch[1]);
+          inquiryPayload = JSON.parse(inqMatch[1]);
           await supabase.from('inquiries').insert([{
             property_id: inquiryPayload.propertyId,
             property_title: inquiryPayload.propertyName,
-            owner_email: inquiryPayload.ownerEmail || "owner@luxeestate.com",
+            owner_email: "owner@luxeestate.com",
             type: "contact",
-            name: inquiryPayload.userName || "Automated Sync Client",
+            name: inquiryPayload.userName || "Voice Guest",
             email: inquiryPayload.email || "client@luxeestate.com",
-            phone: inquiryPayload.phone || "Not provided",
-            message: inquiryPayload.message || "I am extremely interested in your property listing.",
-            created_at: new Date().toISOString()
+            message: inquiryPayload.message
           }]);
-        } catch (e) {
-          console.warn("DB insertion bypassed", e);
-        }
+        } catch (e) {}
 
-        // Automatic Sheets sync behind-the-scenes
-        await autoAppendToSheets(
-          "PROPERTY_INQUIRY",
-          inquiryPayload.userName || "Luxe Client",
-          inquiryPayload.email || "client@luxeestate.com",
-          inquiryPayload.phone || "N/A",
-          inquiryPayload.propertyId,
-          inquiryPayload.propertyName,
-          inquiryPayload.message
-        );
+        await autoAppendToSheets("PROPERTY_INQUIRY", inquiryPayload.userName || "Voice Guest", inquiryPayload.email || "client@luxeestate.com", inquiryPayload.phone || "N/A", inquiryPayload.propertyId, inquiryPayload.propertyName, inquiryPayload.message);
       }
 
-      // If regular search but no direct inquiry form, auto log details anyway
       if (!meetingPayload && !inquiryPayload) {
-        await autoAppendToSheets(
-          "MATCHMAKING_CHAT",
-          "Anonymous Client",
-          "customer-lead@main-ledger.com",
-          "N/A",
-          "None",
-          "Client Matchmaking Engine Session",
-          rawVal
-        );
+        await autoAppendToSheets("VOICE_CONSULTATION", "Voice Guest", "consultation@luxeestate.com", "N/A", "None", "Matchmaking Session", rawVal);
       }
 
-      const assistantMsgId = Date.now().toString() + '-assistant';
-      setMessages(prev => [...prev, {
-        id: assistantMsgId,
-        role: 'assistant',
-        content: responseText,
-        timestamp: new Date(),
-        scheduledMeeting: meetingPayload,
-        submittedInquiry: inquiryPayload
-      }]);
+      const assistId = Date.now().toString() + '-assistant';
+      setMessages(prev => [...prev, { id: assistId, role: 'assistant', content: responseText, timestamp: new Date(), scheduledMeeting: meetingPayload, submittedInquiry: inquiryPayload }]);
+      if (voiceEnabled) speakResponse(responseText);
 
-      if (voiceEnabled) {
-        speakResponse(responseText);
-      }
-
-    } catch (error: any) {
-      console.error(error);
-      setMessages(prev => [...prev, {
-        id: Date.now().toString() + '-error',
-        role: 'assistant',
-        content: `I hit a slight issue accessing LuxeEstate agents right now. Please verify your connection or check your API key secrets.`,
-        timestamp: new Date()
-      }]);
+    } catch (err: any) {
+      setMessages(prev => [...prev, { id: Date.now().toString() + '-err', role: 'assistant', content: `Connection standby. Please verify your network secrets.`, timestamp: new Date() }]);
     } finally {
       setLoading(false);
     }
   };
 
-  const renderRelatedProperty = (propertyId: string) => {
-    const matched = properties.find(p => p.id === propertyId);
-    if (!matched) return null;
-
-    return (
-      <Link href={`/property/${matched.id}`} key={matched.id}>
-        <div className="mt-3 bg-sky-50/50 hover:bg-sky-100 border border-sky-100/70 rounded-2xl overflow-hidden shadow-sm flex items-center transition-all duration-300 transform hover:-translate-y-0.5 cursor-pointer group">
-          <div className="w-16 h-16 relative shrink-0">
-            <img 
-              src={matched.imageUrl} 
-              alt={matched.title} 
-              className="object-cover w-full h-full"
-            />
-          </div>
-          <div className="p-3 flex-1 overflow-hidden">
-            <h4 className="text-xs font-bold text-slate-800 truncate group-hover:text-sky-600 transition-colors uppercase tracking-wider">{matched.title}</h4>
-            <div className="flex items-center justify-between mt-1">
-              <span className="text-[10px] text-slate-500 truncate">{matched.location}</span>
-              <span className="text-sky-650 font-black text-[11px] ml-2">
-                ${(matched.price || 0).toLocaleString()}
-              </span>
-            </div>
-          </div>
-        </div>
-      </Link>
-    );
+  const handleSaveAgentId = (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanId = inputAgentId.trim();
+    setAgentId(cleanId);
+    localStorage.setItem('luxeestate_elevenlabs_agent_id', cleanId);
+    setActiveTab('agent');
   };
 
-  // Get last messages for visual cues in voice view
-  const lastUserMessage = [...messages].reverse().find(m => m.role === 'user')?.content || 'No voice command received yet.';
-  const lastAssistantMessage = [...messages].reverse().find(m => m.role === 'assistant')?.content || 'Ask me about ocean villas, mountain cabins, or schedule a tour!';
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedUrl(label);
+    setTimeout(() => setCopiedUrl(null), 2500);
+  };
+
+  const getAbsoluteUrl = (path: string) => {
+    if (typeof window !== 'undefined') {
+      return `${window.location.origin}${path}`;
+    }
+    return `https://your-domain.com${path}`;
+  };
 
   return (
     <>
-      {/* Floating Toggle Launcher Button */}
+      {/* Floating Concierge Launcher (Warm Light Blue & White Aesthetic) */}
       <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end gap-3 pointer-events-auto select-none">
         <AnimatePresence>
           {isOpen && (
@@ -407,10 +310,10 @@ export default function AIAgentWidget() {
               initial={{ opacity: 0, y: 10, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 10, scale: 0.95 }}
-              className="mb-1 bg-white/95 border border-sky-200/50 text-sky-700 backdrop-blur-md px-4 py-1.5 rounded-full text-[10px] uppercase font-black tracking-widest shadow-md flex items-center gap-2"
+              className="mb-1 bg-white border border-sky-100 text-sky-700 backdrop-blur-md px-4 py-1.5 rounded-full text-[10px] uppercase font-black tracking-widest shadow-md flex items-center gap-2"
             >
               <span className="w-2 h-2 bg-sky-500 rounded-full animate-ping"></span>
-              Aria AI Concierge Page
+              ElevenLabs AI Voice Concierge
             </motion.div>
           )}
         </AnimatePresence>
@@ -421,366 +324,262 @@ export default function AIAgentWidget() {
           className={`w-14 h-14 rounded-full flex items-center justify-center transition-all duration-500 shadow-xl border relative overflow-hidden group pointer-events-auto ${
             isOpen 
               ? 'bg-rose-50 border-rose-200 text-rose-600 rotate-90 scale-95' 
-              : 'bg-white border-sky-100 hover:border-sky-300 text-sky-500 hover:scale-105'
+              : 'bg-white border-sky-100 hover:border-sky-300 text-sky-500 hover:scale-105 shadow-sky-100/50'
           }`}
         >
           {isOpen ? (
-            <X className="w-5.5 h-5.5 relative z-10" />
+            <X className="w-5 h-5 relative z-10" />
           ) : (
             <div className="relative z-10 flex flex-col items-center justify-center pt-0.5">
-              <Bot className="w-6 h-6 text-sky-500 group-hover:scale-110 transition-transform duration-300 animate-pulse" />
+              <Radio className="w-6 h-6 text-sky-500 group-hover:scale-110 transition-transform duration-300 animate-pulse" />
               <div className="flex gap-0.5 justify-center mt-1">
                 <span className="w-1 h-1 bg-sky-400 rounded-full animate-bounce delay-100"></span>
-                <span className="w-1 h-1 bg-sky-450 rounded-full animate-bounce delay-200"></span>
-                <span className="w-1 h-1 bg-sky-500 rounded-full animate-bounce delay-300"></span>
+                <span className="w-1 h-1 bg-sky-500 rounded-full animate-bounce delay-200"></span>
+                <span className="w-1 h-1 bg-sky-600 rounded-full animate-bounce delay-300"></span>
               </div>
             </div>
           )}
-
-          {/* Pulse Ripple Ring */}
-          {!isOpen && (
-            <span className="absolute inset-0 rounded-full border border-sky-200 animate-ping opacity-60"></span>
-          )}
+          {!isOpen && <span className="absolute inset-0 rounded-full border border-sky-200 animate-ping opacity-50"></span>}
         </button>
       </div>
 
-      {/* Glassmorphic Light Blue/White Chatbot Card */}
+      {/* Glassmorphic Light Blue/White Main Dialog Window */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 80, x: 20 }}
+            initial={{ opacity: 0, scale: 0.92, y: 70, x: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0, x: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 100, x: 50 }}
-            transition={{ type: "spring", stiffness: 280, damping: 26 }}
-            className="fixed bottom-24 right-6 w-[360px] md:w-[410px] h-[610px] max-h-[82vh] bg-white/95 border border-sky-100 rounded-[2.2rem] shadow-[0_15px_45px_rgba(56,189,248,0.12)] flex flex-col overflow-hidden z-[9998] backdrop-blur-2xl"
-            id="aria-chatbot-card"
+            exit={{ opacity: 0, scale: 0.92, y: 80, x: 40 }}
+            transition={{ type: "spring", stiffness: 300, damping: 28 }}
+            className="fixed bottom-24 right-6 w-[360px] md:w-[420px] h-[610px] max-h-[82vh] bg-white/95 border border-sky-100 rounded-[2.2rem] shadow-[0_15px_50px_rgba(56,189,248,0.15)] flex flex-col overflow-hidden z-[9998] backdrop-blur-2xl"
+            id="elevenlabs-agent-card"
           >
-            {/* Elegant Header with Light Blue Glares */}
-            <div className="p-5 border-b border-sky-100/50 bg-sky-50/40 flex items-center justify-between relative shrink-0">
-              <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-sky-300/60 to-transparent"></div>
+            {/* Header with Warm Light Blue Glaze */}
+            <div className="p-5 border-b border-sky-100 bg-gradient-to-r from-sky-50/70 via-white to-sky-50/70 flex items-center justify-between shrink-0 select-none">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-white flex items-center justify-center border border-sky-100 relative overflow-hidden shadow-sm">
-                  <div className="absolute inset-0 bg-gradient-to-br from-sky-400/10 to-indigo-400/10"></div>
-                  <Sparkles className="w-5 h-5 text-sky-500 animate-pulse relative z-10" />
+                <div className="w-10 h-10 rounded-2xl bg-white flex items-center justify-center border border-sky-100 shadow-sm relative overflow-hidden">
+                  <div className="absolute inset-0 bg-sky-400/10"></div>
+                  <Radio className="w-5 h-5 text-sky-500 animate-pulse relative z-10" />
                 </div>
                 <div>
-                  <div className="flex items-center gap-1.5">
-                    <h3 className="font-extrabold text-[13px] tracking-wider text-slate-800 uppercase">Aria</h3>
-                    <span className="bg-sky-50 border border-sky-100/50 text-sky-600 text-[8px] tracking-[0.15em] font-black uppercase px-2 py-0.5 rounded-full">Concierge</span>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-black text-[13px] tracking-wider text-slate-800 uppercase">Aria Voice</h3>
+                    <span className="bg-sky-50 border border-sky-200 text-sky-600 text-[8px] tracking-[0.15em] font-extrabold uppercase px-2 py-0.5 rounded-full">ElevenLabs</span>
                   </div>
-                  <p className="text-[10px] text-slate-500 font-medium tracking-tight">Luxury Real Estate Matchmaker</p>
+                  <p className="text-[10px] text-slate-500 font-medium">Conversational AI Concierge</p>
                 </div>
               </div>
 
-              {/* Close Button only */}
-              <button
-                onClick={() => setIsOpen(false)}
-                className="p-1.5 rounded-xl bg-white border border-sky-100/80 text-slate-400 hover:text-slate-600 transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Seamless Mode Switcher (Tab System - 2 features like Gemini AI) */}
-            <div className="p-2 bg-sky-50/20 border-b border-sky-100/30 flex items-center justify-center gap-2 shrink-0">
-              <button
-                onClick={() => handleModeChange('text')}
-                className={`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-full text-xs font-bold transition-all duration-300 ${
-                  activeMode === 'text'
-                    ? 'bg-white shadow-sm text-sky-600 border border-sky-100/50'
-                    : 'text-slate-500 hover:text-slate-800'
-                }`}
-              >
-                <MessageSquare className="w-3.5 h-3.5" />
-                Text Assistant
-              </button>
-              <button
-                onClick={() => handleModeChange('voice')}
-                className={`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-full text-xs font-bold transition-all duration-300 ${
-                  activeMode === 'voice'
-                    ? 'bg-sky-500 text-white shadow-sm font-extrabold'
-                    : 'text-slate-500 hover:text-slate-800'
-                }`}
-              >
-                <Radio className="w-3.5 h-3.5 animate-pulse" />
-                Voice Live
-              </button>
-            </div>
-
-            {/* Speaking voice status visual feedback strip */}
-            <AnimatePresence>
-              {isSpeaking && (
-                <motion.div 
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 26 }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="bg-sky-50/55 border-b border-sky-100/30 px-5 flex items-center justify-between overflow-hidden shrink-0"
+              {/* Navigation Switch */}
+              <div className="flex items-center gap-1.5 bg-sky-50/60 p-1 rounded-xl border border-sky-100">
+                <button
+                  onClick={() => setActiveTab('agent')}
+                  className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${
+                    activeTab === 'agent' ? 'bg-white text-sky-600 shadow-sm border border-sky-100' : 'text-slate-500 hover:text-slate-800'
+                  }`}
                 >
-                  <span className="text-[9px] uppercase tracking-widest text-sky-600 font-extrabold flex items-center gap-1.5">
-                    Audio Voiceover active
-                  </span>
-                  <div className="flex items-center gap-[2px] h-3.5">
-                    {[1, 2, 3, 4, 5].map((idx) => (
-                      <span 
-                        key={idx} 
-                        className="w-[1.5px] bg-sky-500 rounded-full"
-                        style={{
-                          height: '105%',
-                          animation: 'bounce 0.7s ease-in-out infinite',
-                          animationDelay: `${idx * 0.1}s`,
-                          transformOrigin: 'bottom'
-                        }}
-                      ></span>
-                    ))}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                  Agent
+                </button>
+                <button
+                  onClick={() => setActiveTab('architecture')}
+                  className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1 ${
+                    activeTab === 'architecture' ? 'bg-sky-500 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                  title="Data Sync Blueprint & Setup Guide"
+                >
+                  <Settings className="w-3 h-3" /> Setup
+                </button>
+              </div>
+            </div>
 
-            {/* Dynamic Content Views based on active feature selection */}
-            <div className="flex-1 overflow-hidden flex flex-col min-h-0 relative select-text">
+            {/* Content Tabs */}
+            <div className="flex-1 overflow-hidden flex flex-col min-h-0 relative">
               
-              {/* FEATURE 1: STANDARD TEXT ASSISTANT */}
-              {activeMode === 'text' ? (
-                <div 
-                  ref={scrollRef}
-                  className="flex-1 overflow-y-auto px-5 py-4 space-y-4 scrollbar-thin scrollbar-thumb-sky-100 scrollbar-track-transparent select-text"
-                >
-                  {messages.map((m) => (
-                    <div 
-                      key={m.id}
-                      className={`flex flex-col max-w-[85%] ${m.role === 'user' ? 'ml-auto items-end' : 'mr-auto items-start'}`}
-                    >
-                      <div 
-                        className={`p-3.5 rounded-3xl text-xs leading-relaxed ${
-                          m.role === 'user' 
-                            ? 'bg-sky-500 font-semibold text-white px-4 rounded-tr-none shadow-sm' 
-                            : 'bg-white border border-sky-100 text-slate-700 rounded-tl-none shadow-[0_2px_12px_rgba(56,189,248,0.03)]'
-                        }`}
-                      >
-                        <p className="whitespace-pre-line">
-                          {m.content
-                            .replace(/\[SCHEDULE_MEETING:\s*.*?\]/g, '')
-                            .replace(/\[SUBMIT_INQUIRY:\s*.*?\]/g, '')
-                            .trim()}
-                        </p>
-
-                        {/* Property recommendations injected directly inside the message context */}
-                        {m.role === 'assistant' && properties.length > 0 && (
-                          (() => {
-                            const matchedIds = Array.from(m.content.matchAll(/property\/(\d+)/gi)).map(match => match[1]);
-                            const distinctMatchedIds = [...new Set(matchedIds)];
-                            return distinctMatchedIds.map(id => renderRelatedProperty(id));
-                          })()
-                        )}
-
-                        {/* Embedded Booking Notification */}
-                        {m.scheduledMeeting && (
-                          <div className="mt-3 p-3 bg-sky-50/80 border border-sky-200/50 text-sky-700 rounded-2xl flex flex-col gap-1.5 shadow-sm">
-                            <div className="flex items-center gap-1.5">
-                              <CheckCircle2 className="w-4 h-4 text-sky-500 shrink-0" />
-                              <span className="font-extrabold uppercase tracking-wider text-[9px]">Exclusive Booking Confirmed</span>
-                            </div>
-                            <div className="text-[10px]">
-                              <div className="font-bold text-slate-800">{m.scheduledMeeting.propertyName}</div>
-                              <div className="text-slate-500 mt-0.5">Tour request organized on {m.scheduledMeeting.date} at {m.scheduledMeeting.time}</div>
-                            </div>
-                            <div className="text-[8px] text-green-600 bg-white border border-green-100 self-start px-2 py-0.5 rounded-md mt-1 uppercase font-black tracking-widest">
-                              Auto-Synced to Master Sheet
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Embedded Contact Notification */}
-                        {m.submittedInquiry && (
-                          <div className="mt-3 p-3 bg-indigo-50/80 border border-indigo-200/50 text-indigo-700 rounded-2xl flex flex-col gap-1.5 shadow-sm">
-                            <div className="flex items-center gap-1.5">
-                              <CheckCircle2 className="w-4 h-4 text-indigo-500 shrink-0" />
-                              <span className="font-extrabold uppercase tracking-wider text-[9px]">Owner Advised</span>
-                            </div>
-                            <div className="text-[10px]">
-                              <div className="font-bold text-slate-800">{m.submittedInquiry.propertyName}</div>
-                              <div className="text-slate-600 italic mt-1 font-medium bg-white/70 p-1.5 rounded-lg border border-slate-100">"{m.submittedInquiry.message}"</div>
-                            </div>
-                            <div className="text-[8px] text-green-600 bg-white border border-green-100 self-start px-2 py-0.5 rounded-md mt-1 uppercase font-black tracking-widest">
-                              Auto-Synced to Database Sheets
-                            </div>
-                          </div>
-                        )}
+              {/* TAB 1: ELEVENLABS VOICE AGENT OR SIMULATION */}
+              {activeTab === 'agent' ? (
+                <div className="flex-1 flex flex-col items-center justify-between p-6 overflow-y-auto">
+                  
+                  {agentId ? (
+                    /* ELEVENLABS OFFICIAL CONVAI WIDGET CONTAINER */
+                    <div className="w-full flex-1 flex flex-col items-center justify-center text-center my-4">
+                      <div className="mb-4">
+                        <span className="inline-flex items-center gap-1.5 bg-green-50 text-green-700 border border-green-200 text-[10px] uppercase font-extrabold px-3 py-1 rounded-full">
+                          <ShieldCheck className="w-3 h-3 text-green-600" /> ElevenLabs Agent Connected
+                        </span>
+                        <p className="text-[11px] text-slate-500 mt-2">Tap below to initiate live ultra-realistic voice session</p>
                       </div>
-                      <span className="text-[8px] text-slate-400 mt-1.5 px-1 tracking-widest">
-                        {m.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                    </div>
-                  ))}
 
-                  {loading && (
-                    <div className="flex flex-col mr-auto max-w-[85%] items-start">
-                      <div className="p-3 bg-sky-50/50 border border-sky-100/50 text-slate-400 rounded-3xl rounded-tl-none">
-                        <div className="flex gap-1 items-center px-1.5 py-0.5">
-                          <span className="w-1.5 h-1.5 bg-sky-400 rounded-full animate-bounce"></span>
-                          <span className="w-1.5 h-1.5 bg-sky-400 rounded-full animate-bounce delay-150"></span>
-                          <span className="w-1.5 h-1.5 bg-sky-400 rounded-full animate-bounce delay-300"></span>
+                      {/* Official custom element tag */}
+                      <div className="p-4 bg-sky-50/40 rounded-3xl border border-sky-100 shadow-inner w-full flex items-center justify-center min-h-[160px]">
+                        {React.createElement('elevenlabs-convai', { 'agent-id': agentId })}
+                      </div>
+
+                      <div className="mt-6 text-[10px] text-slate-400 max-w-xs">
+                        Connected to Agent ID: <span className="font-mono text-slate-600">{agentId}</span>. 
+                        <button onClick={() => setActiveTab('architecture')} className="text-sky-500 hover:underline block mx-auto mt-1 font-bold">
+                          Configure Data Catalog & Webhooks &rarr;
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    /* INSTANT SIMULATION & CONNECT GUIDE (When agentId is not configured yet) */
+                    <div className="w-full flex-1 flex flex-col justify-between">
+                      <div className="text-center mt-2">
+                        <span className="text-[9px] uppercase tracking-[0.25em] font-black text-sky-500 block mb-1">ElevenLabs Ready</span>
+                        <h4 className="text-sm font-extrabold text-slate-800">Experience Ultra-Warm Voice Live</h4>
+                        <p className="text-[11px] text-slate-500 mt-1 max-w-xs mx-auto">
+                          We designed a seamless bridge so ElevenLabs automatically scrapes your property catalog & saves client leads!
+                        </p>
+                      </div>
+
+                      {/* Voice wave visualizer orb */}
+                      <div className="relative w-36 h-36 mx-auto flex items-center justify-center my-4 select-none">
+                        <motion.div className="absolute inset-0 rounded-full bg-sky-100/50 border border-sky-200" animate={{ scale: isListening ? [1, 1.25, 1] : [1, 1.06, 1] }} transition={{ repeat: Infinity, duration: 2 }} />
+                        <motion.div className="absolute w-28 h-28 rounded-full bg-sky-200/30 border border-sky-300/40" animate={{ scale: isSpeaking ? [1, 1.15, 1] : [1, 1.04, 1] }} transition={{ repeat: Infinity, duration: 1.5 }} />
+                        
+                        <button
+                          onClick={toggleListening}
+                          className={`w-24 h-24 rounded-full flex flex-col items-center justify-center shadow-lg transition-all duration-300 border relative z-10 active:scale-95 ${
+                            isListening ? 'bg-red-500 border-red-400 text-white animate-pulse' : 'bg-gradient-to-tr from-sky-500 to-sky-400 hover:from-sky-600 hover:to-sky-500 border-sky-300 text-white shadow-sky-200'
+                          }`}
+                          title="Click to speak instantly"
+                        >
+                          {isListening ? <MicOff className="w-8 h-8" /> : <Mic className="w-8 h-8" />}
+                          <span className="text-[8px] font-black uppercase tracking-widest mt-1">
+                            {isListening ? "Listening" : isSpeaking ? "Speaking" : "Tap to Talk"}
+                          </span>
+                        </button>
+                      </div>
+
+                      {/* Simulation Subtitle Block */}
+                      <div className="bg-sky-50/50 border border-sky-100 rounded-2xl p-3 text-center">
+                        <div className="flex items-center justify-center gap-2 mb-2">
+                          <button onClick={() => setVoiceEnabled(!voiceEnabled)} className={`px-2.5 py-1 rounded-full text-[9px] font-bold uppercase transition-colors flex items-center gap-1 ${voiceEnabled ? 'bg-sky-500 text-white' : 'bg-white border border-sky-100 text-slate-500'}`}>
+                            {voiceEnabled ? <Volume2 className="w-3 h-3" /> : <VolumeX className="w-3 h-3" />} Voice Simulation {voiceEnabled ? 'ON' : 'OFF'}
+                          </button>
                         </div>
+                        <p className="text-[11px] text-slate-700 italic">"{messages[messages.length - 1]?.content.replace(/\[.*?\]/g, '').trim()}"</p>
+                      </div>
+
+                      {/* Quick input field to test or link */}
+                      <form onSubmit={(e) => { e.preventDefault(); sendSimulationMessage(); }} className="mt-3 flex gap-2">
+                        <input type="text" value={inputValue} onChange={e => setInputValue(e.target.value)} placeholder="Ask about Malibu villa prices..." className="flex-1 bg-white border border-sky-200/80 rounded-xl px-3.5 py-2 text-xs text-slate-700 focus:outline-none focus:border-sky-400 placeholder-slate-400" />
+                        <button type="submit" disabled={loading || !inputValue.trim()} className="p-2 rounded-xl bg-sky-500 text-white disabled:opacity-40"><Send className="w-4 h-4" /></button>
+                      </form>
+
+                      <div className="mt-4 pt-3 border-t border-sky-100 text-center">
+                        <button onClick={() => setActiveTab('architecture')} className="text-xs font-bold text-sky-600 hover:text-sky-700 inline-flex items-center gap-1">
+                          Paste your ElevenLabs Agent ID to switch voice &rarr;
+                        </button>
                       </div>
                     </div>
                   )}
+
                 </div>
               ) : (
-                
-                /* FEATURE 2: MINIMALIST VOICE LIVE CONSOLE */
-                <div className="flex-1 flex flex-col items-center justify-between p-6 select-none bg-sky-50/10">
-                  <div className="text-center mt-2 shrink-0">
-                    <span className="text-[9px] uppercase tracking-[0.25em] font-black text-sky-500 block mb-1">Aria Live Session</span>
-                    <h4 className="text-sm font-bold text-slate-700">Voice-to-Voice Matchmaker</h4>
-                  </div>
 
-                  {/* Gorgeous breathing audio wave visualizer (Central Globe theme) */}
-                  <div className="relative w-44 h-44 flex items-center justify-center my-4 shrink-0">
-                    {/* Breath circles */}
-                    <motion.div 
-                      className="absolute inset-0 rounded-full bg-sky-300/10 border border-sky-200/50"
-                      animate={{ scale: isListening ? [1, 1.25, 1] : [1, 1.08, 1] }}
-                      transition={{ repeat: Infinity, duration: isListening ? 1.4 : 3, ease: "easeInOut" }}
-                    />
-                    <motion.div 
-                      className="absolute w-36 h-36 rounded-full bg-sky-400/15 border border-sky-150"
-                      animate={{ scale: isSpeaking ? [1, 1.15, 1] : [1, 1.05, 1] }}
-                      transition={{ repeat: Infinity, duration: isSpeaking ? 1.2 : 4, ease: "easeInOut", delay: 0.5 }}
-                    />
-                    
-                    {/* Core visual sound wave circle */}
-                    <div className={`w-28 h-28 rounded-full flex flex-col items-center justify-center shadow-lg transition-all duration-300 border bg-white ${
-                      isListening ? 'border-sky-300 shadow-sky-100' : 'border-sky-100 shadow-sky-50'
-                    }`}>
-                      <div className="relative flex items-center justify-center">
-                        <Radio className={`w-9 h-9 ${isListening ? 'text-sky-500 animate-spin' : isSpeaking ? 'text-sky-450 animate-pulse' : 'text-sky-300'}`} />
-                        {isListening && (
-                          <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full animate-ping"></span>
-                        )}
-                      </div>
-                      <span className="text-[8px] font-black uppercase tracking-widest text-sky-600 mt-2">
-                        {isListening ? "Listening" : isSpeaking ? "Aria Speaking" : "Standby"}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Live speech subtitles helper (decluttered transcription block) */}
-                  <div className="w-full max-w-sm bg-white/90 border border-sky-100/65 rounded-3xl p-4 shadow-sm flex-1 flex flex-col justify-center gap-3 overflow-hidden leading-relaxed">
-                    <div className="text-[10px] uppercase font-black tracking-widest text-sky-500">Subtitles</div>
-                    
-                    <div className="overflow-y-auto max-h-24 space-y-2 pr-1 text-slate-600 scrollbar-none">
-                      <div className="text-[11px] leading-relaxed">
-                        <span className="font-bold text-slate-400 block text-[9px] uppercase tracking-wider mb-0.5">You asked</span>
-                        <p className="italic text-slate-700">"{lastUserMessage}"</p>
-                      </div>
-                      
-                      <div className="h-[1px] bg-slate-100/80 my-2" />
-
-                      <div className="text-[11px] leading-relaxed">
-                        <span className="font-extrabold text-sky-600 block text-[9px] uppercase tracking-wider mb-0.5">Aria responded</span>
-                        <p className="whitespace-pre-line text-slate-700">
-                          {lastAssistantMessage
-                            .replace(/\[SCHEDULE_MEETING:\s*.*?\]/g, '')
-                            .replace(/\[SUBMIT_INQUIRY:\s*.*?\]/g, '')
-                            .trim()}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 text-center shrink-0">
-                    <p className="text-[9px] text-slate-400 uppercase tracking-widest">Speak naturally about luxury house prices</p>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Seamless Auto Sheets database logs strip (decluttered completely - no inputs or big widgets, just status badge) */}
-            <div className="px-5 py-3.5 border-t border-sky-100/40 bg-sky-50/15 flex items-center justify-between text-xs text-slate-500 shrink-0 select-none">
-              <div className="flex items-center gap-2 overflow-hidden">
-                <FileSpreadsheet className="w-3.5 h-3.5 text-sky-500 animate-pulse shrink-0" />
-                <span className="text-[9.5px] uppercase tracking-wider text-slate-600 font-extrabold">
-                  Master Sheets Auto-Sync Enabled
-                </span>
-                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse shrink-0"></span>
-              </div>
-
-              {lastSyncedRow && (
-                <div className="text-[8px] bg-sky-100/40 border border-sky-200/30 text-sky-700 px-2 py-0.5 rounded-full truncate max-w-36">
-                  Synced: {lastSyncedRow.title}
-                </div>
-              )}
-            </div>
-
-            {/* Input keyboard row (Only shown in static text assistant feature) */}
-            {activeMode === 'text' && (
-              <div className="p-4 border-t border-sky-100/40 bg-white flex items-center gap-2 shrink-0">
-                {/* Voice Speakback Toggle */}
-                <button
-                  onClick={() => {
-                    setVoiceEnabled(!voiceEnabled);
-                    if (voiceEnabled && window.speechSynthesis) window.speechSynthesis.cancel();
-                  }}
-                  className={`p-2.5 rounded-2xl border transition-all duration-300 flex items-center justify-center shrink-0 ${
-                    voiceEnabled 
-                      ? 'bg-sky-50 border-sky-200 text-sky-600' 
-                      : 'bg-white border-slate-200 text-slate-450 hover:text-slate-600'
-                  }`}
-                  title={voiceEnabled ? "Mute Voiceover" : "Enable Voiceover"}
-                >
-                  {voiceEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-                </button>
-
-                <form 
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    sendMessage();
-                  }}
-                  className="flex-1 flex gap-2"
-                >
-                  <input
-                    type="text"
-                    value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
-                    placeholder="Search tulum villa or schedule tour..."
-                    className="flex-1 bg-sky-50/25 border border-sky-100/20 rounded-2xl px-4 py-2.5 text-xs text-slate-700 focus:outline-none focus:border-sky-300 placeholder-slate-400 focus:ring-1 focus:ring-sky-200"
-                  />
+                /* TAB 2: ELEVENLABS DATA ACCESS & ARCHITECTURE BLUEPRINT (Answering User's Exact Question!) */
+                <div className="flex-1 overflow-y-auto p-6 space-y-5 text-slate-700 select-text scrollbar-thin scrollbar-thumb-sky-100">
                   
-                  <button
-                    type="submit"
-                    disabled={loading || !inputValue.trim()}
-                    className="p-2.5 rounded-2xl bg-sky-500 hover:bg-sky-600 text-white disabled:opacity-40 transition-all duration-300 flex items-center justify-center shadow-md shadow-sky-100 active:scale-95 shrink-0"
-                  >
-                    <Send className="w-3.5 h-3.5" />
-                  </button>
-                </form>
-              </div>
-            )}
+                  <div className="bg-gradient-to-br from-sky-500 to-indigo-600 rounded-3xl p-5 text-white shadow-md">
+                    <span className="text-[9px] uppercase tracking-widest font-black text-sky-200 block mb-1">Architecture Ideas & Strategy</span>
+                    <h4 className="text-base font-extrabold">How ElevenLabs Gets Your Data</h4>
+                    <p className="text-xs text-sky-100 mt-1.5 leading-relaxed">
+                      ElevenLabs agents can be far more powerful than basic chatbots when connected to our **Dynamic Knowledge Feed** and **Automated Sync Webhooks**!
+                    </p>
+                  </div>
 
-            {/* Micro button layout inside Voice Mode */}
-            {activeMode === 'voice' && (
-              <div className="p-4 border-t border-sky-100/40 bg-white flex items-center justify-center shrink-0">
-                <button
-                  onClick={toggleListening}
-                  className={`w-14 h-14 rounded-full border transition-all duration-300 flex items-center justify-center relative ${
-                    isListening 
-                      ? 'bg-red-500 border-red-400 text-white scale-105' 
-                      : 'bg-sky-500 hover:bg-sky-600 border-sky-400 text-white shadow-lg'
-                  }`}
-                  title={isListening ? "Listening... Tab to stop" : "Start Speaking with Aria"}
-                >
-                  {isListening ? (
-                    <>
-                      <MicOff className="w-5.5 h-5.5 relative z-10" />
-                      <span className="absolute inset-0 rounded-full border border-red-400 animate-ping opacity-60"></span>
-                    </>
-                  ) : (
-                    <Mic className="w-5.5 h-5.5" />
-                  )}
-                </button>
+                  {/* STEP 1: CONNECT AGENT ID */}
+                  <div className="bg-white border border-sky-100 rounded-3xl p-4 shadow-sm">
+                    <div className="flex items-center gap-2 text-sky-600 font-black text-xs uppercase tracking-wider mb-2">
+                      <ShieldCheck className="w-4 h-4" /> 1. Connect Your Agent ID
+                    </div>
+                    <p className="text-[11px] text-slate-500 mb-3">
+                      Create a Conversational AI agent in ElevenLabs, copy its Agent ID (`agent_...`), and paste it here:
+                    </p>
+                    <form onSubmit={handleSaveAgentId} className="flex gap-2">
+                      <input 
+                        type="text" 
+                        value={inputAgentId} 
+                        onChange={e => setInputAgentId(e.target.value)} 
+                        placeholder="agent_xxxxxxxxxxxxxxxx" 
+                        className="flex-1 bg-sky-50/50 border border-sky-200 rounded-xl px-3 py-1.5 text-xs font-mono text-slate-800 focus:outline-none focus:border-sky-500"
+                      />
+                      <button type="submit" className="px-4 py-1.5 bg-sky-500 hover:bg-sky-600 text-white font-bold text-xs rounded-xl shadow-sm transition-all active:scale-95">
+                        Save ID
+                      </button>
+                    </form>
+                  </div>
+
+                  {/* STEP 2: KNOWLEDGE BASE FEED (Catalog Access) */}
+                  <div className="bg-white border border-sky-100 rounded-3xl p-4 shadow-sm">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex items-center gap-2 text-sky-600 font-black text-xs uppercase tracking-wider">
+                        <Database className="w-4 h-4" /> 2. Live Catalog Feed URL
+                      </div>
+                      <span className="text-[8px] bg-sky-100 text-sky-700 px-2 py-0.5 rounded font-black uppercase">Auto-Refresh</span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 mb-2.5 leading-relaxed">
+                      In ElevenLabs dashboard &rarr; **Knowledge Base** &rarr; **Add URL**. Paste this link so the agent automatically learns all Malibu villas, prices, and amenities live:
+                    </p>
+                    <div className="flex items-center gap-2 bg-sky-50/70 p-2 rounded-xl border border-sky-100 font-mono text-[10px] text-slate-700">
+                      <span className="truncate flex-1">{getAbsoluteUrl('/api/elevenlabs/catalog')}</span>
+                      <button onClick={() => copyToClipboard(getAbsoluteUrl('/api/elevenlabs/catalog'), 'catalog')} className="p-1.5 bg-white hover:bg-sky-100 text-sky-600 rounded-lg border border-sky-200 shrink-0 transition-colors" title="Copy Catalog URL">
+                        {copiedUrl === 'catalog' ? <CheckCircle2 className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+                      </button>
+                      <a href="/api/elevenlabs/catalog" target="_blank" rel="noreferrer" className="p-1.5 bg-white hover:bg-sky-100 text-slate-500 rounded-lg border border-sky-200 shrink-0" title="Test View JSON Feed">
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    </div>
+                  </div>
+
+                  {/* STEP 3: SERVER WEBHOOK FOR AUTOMATED MASTER SHEETS SYNC */}
+                  <div className="bg-white border border-sky-100 rounded-3xl p-4 shadow-sm">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex items-center gap-2 text-indigo-600 font-black text-xs uppercase tracking-wider">
+                        <FileSpreadsheet className="w-4 h-4" /> 3. Automated Sheets Webhook
+                      </div>
+                      <span className="text-[8px] bg-green-100 text-green-700 px-2 py-0.5 rounded font-black uppercase">Auto-Sync</span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 mb-2.5 leading-relaxed">
+                      In ElevenLabs &rarr; **Tools** &rarr; **Add Webhook Tool**. Name it `book_estate_tour` and set the POST target URL to:
+                    </p>
+                    <div className="flex items-center gap-2 bg-indigo-50/60 p-2 rounded-xl border border-indigo-100 font-mono text-[10px] text-slate-700">
+                      <span className="truncate flex-1">{getAbsoluteUrl('/api/elevenlabs/webhook')}</span>
+                      <button onClick={() => copyToClipboard(getAbsoluteUrl('/api/elevenlabs/webhook'), 'webhook')} className="p-1.5 bg-white hover:bg-indigo-100 text-indigo-600 rounded-lg border border-indigo-200 shrink-0 transition-colors" title="Copy Webhook URL">
+                        {copiedUrl === 'webhook' ? <CheckCircle2 className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-2 italic">
+                      *When a client speaks to ElevenLabs to book a tour, our server webhook intercepts it, saves to Supabase, and logs directly to your Master Google Sheet automatically!
+                    </p>
+                  </div>
+
+                  <div className="text-center pt-2">
+                    <button onClick={() => setActiveTab('agent')} className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-md transition-all">
+                      Return to Voice Assistant &rarr;
+                    </button>
+                  </div>
+
+                </div>
+              )}
+            </div>
+
+            {/* Bottom Status Indicator (Master Automated Sheet Sync Banner) */}
+            <div className="px-5 py-3 border-t border-sky-100 bg-sky-50/40 flex items-center justify-between text-xs text-slate-500 shrink-0 select-none">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0"></span>
+                <span className="text-[10px] uppercase font-bold tracking-wider text-slate-600">
+                  Master Sheets Auto-Sync Active
+                </span>
               </div>
-            )}
+              
+              {lastSyncedNotification && (
+                <span className="text-[9px] font-semibold text-sky-600 bg-white border border-sky-200 px-2 py-0.5 rounded-full animate-bounce">
+                  {lastSyncedNotification}
+                </span>
+              )}
+            </div>
 
           </motion.div>
         )}
