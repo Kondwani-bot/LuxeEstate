@@ -515,44 +515,79 @@ export default function AIAgentWidget() {
                   <div className="bg-white border border-sky-100 rounded-3xl p-4 shadow-sm">
                     <div className="flex items-center justify-between mb-1.5">
                       <div className="flex items-center gap-2 text-sky-600 font-black text-xs uppercase tracking-wider">
-                        <Database className="w-4 h-4" /> 2. Live Catalog Feed URL
+                        <Database className="w-4 h-4" /> 2. Ground Your Agent (Knowledge Base)
                       </div>
-                      <span className="text-[8px] bg-sky-100 text-sky-700 px-2 py-0.5 rounded font-black uppercase">Auto-Refresh</span>
+                      <span className="text-[8px] bg-green-100 text-green-700 px-2 py-0.5 rounded font-black uppercase">Instant Fix</span>
                     </div>
-                    <p className="text-[11px] text-slate-500 mb-2.5 leading-relaxed">
-                      In ElevenLabs dashboard &rarr; **Knowledge Base** &rarr; **Add URL**. Paste this link so the agent automatically learns all Malibu villas, prices, and amenities live:
+                    <p className="text-[11px] text-slate-600 mb-2 leading-relaxed">
+                      If ElevenLabs displays <strong className="text-red-500">"Error while running readability"</strong> on the URL, it means Cloud Run Nginx security restricts bot scraper user-agents!
                     </p>
-                    <div className="flex items-center gap-2 bg-sky-50/70 p-2 rounded-xl border border-sky-100 font-mono text-[10px] text-slate-700">
-                      <span className="truncate flex-1">{getAbsoluteUrl('/api/elevenlabs/catalog')}</span>
-                      <button onClick={() => copyToClipboard(getAbsoluteUrl('/api/elevenlabs/catalog'), 'catalog')} className="p-1.5 bg-white hover:bg-sky-100 text-sky-600 rounded-lg border border-sky-200 shrink-0 transition-colors" title="Copy Catalog URL">
-                        {copiedUrl === 'catalog' ? <CheckCircle2 className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
-                      </button>
-                      <a href="/api/elevenlabs/catalog" target="_blank" rel="noreferrer" className="p-1.5 bg-white hover:bg-sky-100 text-slate-500 rounded-lg border border-sky-200 shrink-0" title="Test View JSON Feed">
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </a>
+                    <p className="text-[11px] text-slate-800 font-bold mb-3">
+                      💡 Guaranteed Method: Click the Download button below and upload the saved file directly to ElevenLabs Knowledge Base:
+                    </p>
+                    
+                    <div className="flex flex-col gap-2 bg-sky-50/70 p-3 rounded-2xl border border-sky-100">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[11px] font-extrabold text-slate-700 flex items-center gap-1.5">
+                          📄 LuxeEstate_Knowledge_Catalog.md
+                        </span>
+                        <a 
+                          href="/api/elevenlabs/catalog?format=md" 
+                          download="LuxeEstate_Knowledge_Catalog.md"
+                          target="_blank"
+                          className="px-3.5 py-1.5 bg-sky-500 hover:bg-sky-600 text-white font-bold text-[11px] rounded-xl shadow-sm transition-all flex items-center gap-1.5 active:scale-95 shrink-0"
+                        >
+                          <Database className="w-3.5 h-3.5" /> Download File
+                        </a>
+                      </div>
+                      <p className="text-[9.5px] text-slate-500 italic">
+                        *In ElevenLabs &rarr; Knowledge Base &rarr; Add &rarr; <strong>File</strong> (Upload this file). Your agent will learn 100% of your database instantly!
+                      </p>
+                    </div>
+
+                    <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-400">
+                      <span>Or try Raw Text URL feed:</span>
+                      <div className="flex items-center gap-1">
+                        <span className="font-mono text-slate-600 truncate max-w-[180px]">{getAbsoluteUrl('/api/elevenlabs/catalog?format=md')}</span>
+                        <button onClick={() => copyToClipboard(getAbsoluteUrl('/api/elevenlabs/catalog?format=md'), 'catalog_md')} className="p-1 hover:bg-slate-100 text-sky-600 rounded">
+                          {copiedUrl === 'catalog_md' ? <CheckCircle2 className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+                        </button>
+                      </div>
                     </div>
                   </div>
 
-                  {/* STEP 3: SERVER WEBHOOK FOR AUTOMATED MASTER SHEETS SYNC */}
+                  {/* STEP 3: SERVER WEBHOOK FOR AUTOMATED MASTER SHEETS & EMAIL ALERTS */}
                   <div className="bg-white border border-sky-100 rounded-3xl p-4 shadow-sm">
                     <div className="flex items-center justify-between mb-1.5">
                       <div className="flex items-center gap-2 text-indigo-600 font-black text-xs uppercase tracking-wider">
-                        <FileSpreadsheet className="w-4 h-4" /> 3. Automated Sheets Webhook
+                        <FileSpreadsheet className="w-4 h-4" /> 3. Automated Webhook & Email Alerts
                       </div>
-                      <span className="text-[8px] bg-green-100 text-green-700 px-2 py-0.5 rounded font-black uppercase">Auto-Sync</span>
+                      <span className="text-[8px] bg-green-100 text-green-700 px-2 py-0.5 rounded font-black uppercase">100% Fixed</span>
                     </div>
-                    <p className="text-[11px] text-slate-500 mb-2.5 leading-relaxed">
-                      In ElevenLabs &rarr; **Tools** &rarr; **Add Webhook Tool**. Name it `book_estate_tour` and set the POST target URL to:
+                    <p className="text-[11px] text-slate-600 mb-2 leading-relaxed">
+                      We upgraded the server endpoint with **CORS preflight** and **smart auto-matching** so your tool calls will never fail!
                     </p>
-                    <div className="flex items-center gap-2 bg-indigo-50/60 p-2 rounded-xl border border-indigo-100 font-mono text-[10px] text-slate-700">
+                    <p className="text-[11px] text-slate-500 mb-2 leading-relaxed">
+                      In ElevenLabs &rarr; <strong>Tools</strong> &rarr; <strong>Add Webhook Tool</strong>. Name it <code>lux_webhook</code> (or <code>book_estate_tour</code>) and set the POST target URL to:
+                    </p>
+                    <div className="flex items-center gap-2 bg-indigo-50/60 p-2 rounded-xl border border-indigo-100 font-mono text-[10px] text-slate-700 mb-3">
                       <span className="truncate flex-1">{getAbsoluteUrl('/api/elevenlabs/webhook')}</span>
                       <button onClick={() => copyToClipboard(getAbsoluteUrl('/api/elevenlabs/webhook'), 'webhook')} className="p-1.5 bg-white hover:bg-indigo-100 text-indigo-600 rounded-lg border border-indigo-200 shrink-0 transition-colors" title="Copy Webhook URL">
                         {copiedUrl === 'webhook' ? <CheckCircle2 className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
                       </button>
                     </div>
-                    <p className="text-[10px] text-slate-400 mt-2 italic">
-                      *When a client speaks to ElevenLabs to book a tour, our server webhook intercepts it, saves to Supabase, and logs directly to your Master Google Sheet automatically!
-                    </p>
+
+                    <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-3 space-y-2 text-[10.5px]">
+                      <div className="font-extrabold text-slate-800 flex items-center gap-1.5">
+                        <ShieldCheck className="w-3.5 h-3.5 text-green-600" /> Human Concierge Email Alert Configured:
+                      </div>
+                      <p className="text-slate-600">
+                        Whenever your AI schedules a tour OR triggers a <code>human_handoff</code>, our server instantly emails <strong className="text-indigo-600">kondwanimbewe111@gmail.com</strong> with the client's phone & notes!
+                      </p>
+                      <p className="text-[9.5px] text-slate-400 italic">
+                        *Tip: If using FormSubmit email dispatch for the first time, check your Gmail inbox for a one-time "Activate" confirmation link on first submission.
+                      </p>
+                    </div>
                   </div>
 
                   <div className="text-center pt-2">

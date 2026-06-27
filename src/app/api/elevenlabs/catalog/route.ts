@@ -43,29 +43,33 @@ export async function GET(req: NextRequest) {
 <body>
   <article>
     <header>
-      <h1>LuxeEstate Exclusive Real Estate Knowledge Base</h1>
-      <p><strong>Platform:</strong> LuxeEstate Luxury Real Estate Matchmaking Hub</p>
+      <h1>LuxeEstate Real Estate Knowledge Base</h1>
+      <p><strong>Platform:</strong> LuxeEstate Friendly Real Estate Matchmaking Hub</p>
       <p><strong>Catalog Updated:</strong> ${updatedAt}</p>
       <p><strong>Total Active Properties:</strong> ${list.length}</p>
     </header>
 
     <section id="agent-grounding-instructions">
       <h2>Conversational AI Agent Grounding Instructions</h2>
-      <p>You are Aria, the exclusive AI Voice Concierge for LuxeEstate. You speak warmly, concisely, and professionally.</p>
-      <p>When clients ask about available houses, prices, locations, or amenities, consult the live property listings documented below.</p>
-      <p>If a client expresses interest in booking a private showing, viewing, or estate tour: accurately collect their <strong>Full Name</strong>, <strong>Email or Phone Number</strong>, <strong>Preferred Date/Time</strong>, and the <strong>Property Title</strong>. Once collected, inform them you are organizing the booking and execute your automated webhook tool.</p>
+      <p>You are Aria, the friendly AI Voice Concierge for LuxeEstate.</p>
+      <p><strong>CRITICAL TONE & LANGUAGE RULE:</strong> You must speak in simple, clear, everyday English. Do not use big, fancy, snobby, or confusing words. Talk warmly and politely so that anyone—whether a young first-time buyer or a wealthy investor—feels 100% comfortable. Keep your answers short and easy to understand.</p>
+      
+      <h3>How to handle bookings & tools:</h3>
+      <p>When clients ask about available houses, prices, locations, or features, read them the live property listings documented below.</p>
+      <p><strong>1. Booking a Viewing / House Tour:</strong> If a client wants to see a house, ask for their: <strong>Name</strong>, <strong>Phone Number or Email</strong>, <strong>Preferred Date/Time</strong>, and which <strong>House Title</strong> they like. Once they give this info, say <em>"Got it! I am booking your tour right now."</em> and IMMEDIATELY call your webhook tool with <code>action: "viewing_scheduled"</code>.</p>
+      <p><strong>2. Speaking to a Human Concierge:</strong> If a client wants to talk to a real person or human agent, ask for their <strong>Name</strong> and <strong>Phone Number or Email</strong>. Once they give it, say <em>"I have sent an instant email alert to our human concierge team. They will call or email you shortly!"</em> and IMMEDIATELY call your webhook tool with <code>action: "human_handoff"</code>.</p>
     </section>
 
     <section id="active-property-catalog">
-      <h2>Available Luxury Listings & Estates</h2>
+      <h2>Available Homes & Luxury Estates</h2>
       ${list.length === 0 ? '<p>No properties currently listed in database.</p>' : list.map((p: any) => `
       <div class="listing" id="prop-${p.id}">
-        <h3>${p.title || 'Luxury Estate'} <span class="badge">$${(p.price || 0).toLocaleString()}</span></h3>
+        <h3>${p.title || 'Luxury Home'} <span class="badge">$${(p.price || 0).toLocaleString()}</span></h3>
         <p><strong>Location:</strong> ${p.location || 'Prime Location'}</p>
         <p><strong>Property Type:</strong> ${p.type || 'Residence'} | <strong>Status:</strong> ${p.status || 'Available'}</p>
-        <p><strong>Overview:</strong> ${p.description || 'Exclusive luxury residence.'}</p>
+        <p><strong>Overview:</strong> ${p.description || 'Exclusive luxury home.'}</p>
         ${p.features && Array.isArray(p.features) && p.features.length > 0 ? `
-        <p><strong>Key Amenities & Features:</strong></p>
+        <p><strong>Key Features:</strong></p>
         <ul>
           ${p.features.map((f: string) => `<li>${f}</li>`).join('')}
         </ul>` : ''}
