@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { Copy, CheckCircle2 } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -19,6 +20,94 @@ function SimpleToggle({ defaultChecked = false }: { defaultChecked?: boolean }) 
 }
 
 export default function AdminSettings() {
+  const [copiedJson, setCopiedJson] = useState(false);
+
+  const getValidWebhookJson = () => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://luxe-estate-henna-seven.vercel.app';
+    return JSON.stringify({
+      type: "webhook",
+      name: "lux-webhook",
+      description: "Schedules a house tour viewing or alerts human admin Kondwani. Call this tool IMMEDIATELY when a client wants to book a house visit or asks to speak to a human agent. Extract the client's name, contact details, preferred date, and the house title from the conversation.",
+      disable_interruptions: false,
+      force_pre_tool_speech: false,
+      pre_tool_speech: "auto",
+      tool_call_sound: null,
+      tool_call_sound_behavior: "auto",
+      tool_error_handling_mode: "auto",
+      execution_mode: "immediate",
+      api_schema: {
+        url: `${origin}/api/elevenlabs/webhook`,
+        method: "POST",
+        path_params_schema: [],
+        query_params_schema: [],
+        request_body_schema: {
+          id: "body",
+          type: "object",
+          description: "Schedules a house tour viewing or alerts human admin Kondwani. Call this tool IMMEDIATELY when a client wants to book a house visit or asks to speak to a human agent. Extract the client's name, contact details, preferred date, and the house title from the conversation.",
+          required: true,
+          properties: [
+            {
+              id: "action",
+              type: "string",
+              description: 'The type of request. Put "viewing_scheduled" if the client wants to visit a house. Put "human_handoff" if the client wants a real human person to call or email them.',
+              required: false
+            },
+            {
+              id: "clientName",
+              description: "The full name of the person talking to the AI.",
+              required: true,
+              type: "string"
+            },
+            {
+              id: "phone",
+              description: 'The phone number of the client. If they did not give a phone number, put "Not Specified".',
+              required: true,
+              type: "string"
+            },
+            {
+              id: "email",
+              description: 'The email address of the client. If they only gave a phone number, put "guest@luxeestate.com".',
+              required: true,
+              type: "string"
+            },
+            {
+              id: "propertyTitle",
+              description: "The exact title or name of the house or luxury estate the client wants to visit.",
+              required: true,
+              type: "string"
+            },
+            {
+              id: "appointmentDate",
+              description: 'The date the client wants to visit the house (for example: "Tomorrow", "Next Monday", or "2026-07-01").',
+              required: true,
+              type: "string"
+            },
+            {
+              id: "appointmentTime",
+              description: 'The time of day the client wants to visit (for example: "2:00 PM" or "Morning").',
+              required: true,
+              type: "string"
+            },
+            {
+              id: "message",
+              description: "Any extra notes, questions, or special requests the client mentioned during the talk.",
+              required: true,
+              type: "string"
+            }
+          ]
+        },
+        request_headers: [],
+        content_type: "application/json"
+      }
+    }, null, 2);
+  };
+
+  const copyJsonToClipboard = () => {
+    navigator.clipboard.writeText(getValidWebhookJson());
+    setCopiedJson(true);
+    setTimeout(() => setCopiedJson(false), 3000);
+  };
+
   return (
     <div className="flex h-screen bg-slate-50 text-slate-900">
       <Sidebar role="admin" />
@@ -53,7 +142,7 @@ export default function AdminSettings() {
                     <Label className="text-xs font-bold uppercase tracking-wider text-sky-100">1. ElevenLabs Agent ID</Label>
                     <Input 
                       placeholder="agent_xxxxxxxxxxxxxxxx"
-                      defaultValue={typeof window !== 'undefined' ? localStorage.getItem('luxeestate_elevenlabs_agent_id') || '' : ''}
+                      defaultValue={typeof window !== 'undefined' ? localStorage.getItem('luxeestate_elevenlabs_agent_id') || 'agent_9001kw5mbgq3evy8szkp8wdmgjsc' : 'agent_9001kw5mbgq3evy8szkp8wdmgjsc'}
                       onChange={(e) => localStorage.setItem('luxeestate_elevenlabs_agent_id', e.target.value.trim())}
                       className="h-11 bg-white/10 border-white/30 text-white placeholder:text-sky-200/50 rounded-xl font-mono text-xs focus:bg-white focus:text-slate-900" 
                     />
@@ -63,22 +152,41 @@ export default function AdminSettings() {
                   <div className="space-y-2">
                     <Label className="text-xs font-bold uppercase tracking-wider text-sky-100">2. Google Sheet ID / Webhook</Label>
                     <Input 
-                      placeholder="e.g. 1S_8C5X8_v... or https://script.google.com/..."
+                      placeholder="e.g. 1BxiMVs0XRA5nFMdKvBdBZjgmUU..."
                       defaultValue={typeof window !== 'undefined' ? localStorage.getItem('luxeestate_google_sheet_config') || '' : ''}
                       onChange={(e) => localStorage.setItem('luxeestate_google_sheet_config', e.target.value.trim())}
                       className="h-11 bg-white/10 border-white/30 text-white placeholder:text-sky-200/50 rounded-xl font-mono text-xs focus:bg-white focus:text-slate-900" 
                     />
-                    <p className="text-[10px] text-sky-200">All scheduled house viewing tours will be saved here instantly.</p>
+                    <div className="bg-white/15 p-3 rounded-xl text-[11px] text-sky-100 space-y-1 mt-1">
+                      <p className="font-bold text-white flex items-center gap-1">💡 What to paste here:</p>
+                      <p className="text-[10px] leading-snug">Open your Google Sheet in your browser. Look at the top address bar:</p>
+                      <p className="font-mono bg-black/40 p-1.5 rounded text-[9.5px] text-sky-200 truncate select-all">
+                        docs.google.com/spreadsheets/d/<strong className="text-yellow-300 underline font-bold">1S_8C5X8_v-central-leads</strong>/edit
+                      </p>
+                      <p className="text-[10px]">Copy only the code marked in <strong className="text-yellow-300">yellow</strong> and paste it above!</p>
+                    </div>
                   </div>
                 </div>
 
                 <div className="bg-white/10 p-4 rounded-2xl border border-white/20 space-y-3 text-xs">
                   <h4 className="font-extrabold text-white">📌 ElevenLabs Webhook Tool Configuration:</h4>
                   <p className="text-sky-100">In ElevenLabs dashboard &rarr; <strong>Tools</strong> &rarr; <strong>Add Webhook</strong>. Set POST URL to:</p>
-                  <div className="flex items-center justify-between bg-black/30 p-2 rounded-xl font-mono text-[11px] text-sky-200 select-all">
-                    {typeof window !== 'undefined' ? `${window.location.origin}/api/elevenlabs/webhook` : '/api/elevenlabs/webhook'}
+                  <div className="flex items-center justify-between bg-black/30 p-2.5 rounded-xl font-mono text-[11px] text-sky-200 select-all">
+                    <span>{typeof window !== 'undefined' ? `${window.location.origin}/api/elevenlabs/webhook` : '/api/elevenlabs/webhook'}</span>
                   </div>
-                  <p className="text-[11px] text-sky-100 leading-relaxed">
+
+                  <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-white/10">
+                    <span className="text-[11px] text-sky-200">Got &quot;Property description cannot be empty&quot; error in ElevenLabs? Click here to copy the 100% fixed JSON definition:</span>
+                    <button 
+                      onClick={copyJsonToClipboard}
+                      className="px-4 py-2 bg-white hover:bg-sky-50 text-indigo-700 font-extrabold rounded-xl text-xs flex items-center gap-2 transition-all shadow-sm shrink-0"
+                    >
+                      {copiedJson ? <CheckCircle2 className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+                      {copiedJson ? 'Fixed JSON Copied!' : 'Copy Valid Tool JSON'}
+                    </button>
+                  </div>
+
+                  <p className="text-[11px] text-sky-100 leading-relaxed pt-1">
                     ✨ <strong>What happens when a client asks to book a tour:</strong> The AI asks for their Name, Phone/Email, Date, and House Title. Our server instantly records the booking and sends 3 emails:
                     <br />• Confirmation email to the <strong>Client</strong>
                     <br />• Alert email to the <strong>Property Owner</strong>

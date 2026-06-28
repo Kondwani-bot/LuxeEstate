@@ -3,13 +3,13 @@
 import React, { useEffect, useState } from 'react';
 
 export default function AIAgentWidget() {
-  const [agentId, setAgentId] = useState<string>('');
+  const [agentId, setAgentId] = useState<string>('agent_9001kw5mbgq3evy8szkp8wdmgjsc');
 
   useEffect(() => {
-    // Read configured ElevenLabs Agent ID from localStorage or environment
+    // Read configured ElevenLabs Agent ID from localStorage or environment, defaulting to user's exact agent ID
     const savedId = localStorage.getItem('luxeestate_elevenlabs_agent_id');
     const envId = process.env.NEXT_PUBLIC_ELEVENLABS_AGENT_ID;
-    const active = savedId || envId || '';
+    const active = savedId || envId || 'agent_9001kw5mbgq3evy8szkp8wdmgjsc';
     setAgentId(active);
 
     if (active) {
@@ -17,7 +17,7 @@ export default function AIAgentWidget() {
       if (!document.getElementById(scriptId)) {
         const script = document.createElement('script');
         script.id = scriptId;
-        script.src = 'https://elevenlabs.io/convai-widget/index.js';
+        script.src = 'https://unpkg.com/@elevenlabs/convai-widget-embed';
         script.async = true;
         script.type = 'text/javascript';
         document.body.appendChild(script);
@@ -29,3 +29,4 @@ export default function AIAgentWidget() {
 
   return React.createElement('elevenlabs-convai', { 'agent-id': agentId });
 }
+
