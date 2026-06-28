@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 
 export default function AIAgentWidget() {
   const [agentId, setAgentId] = useState<string>('agent_9001kw5mbgq3evy8szkp8wdmgjsc');
+  const [canShowWidget, setCanShowWidget] = useState<boolean>(false);
 
   useEffect(() => {
     // Read configured ElevenLabs Agent ID from localStorage or environment, defaulting to user's exact agent ID
@@ -12,7 +13,21 @@ export default function AIAgentWidget() {
     const active = savedId || envId || 'agent_9001kw5mbgq3evy8szkp8wdmgjsc';
     setAgentId(active);
 
-    if (active) {
+    const checkVisibility = () => {
+      // Only show widget if onboarding welcoming popup has been seen/closed
+      const seen = localStorage.getItem('onboardingSeen');
+      if (seen === 'true') {
+        setCanShowWidget(true);
+      }
+    };
+
+    checkVisibility();
+    window.addEventListener('onboardingClosed', checkVisibility);
+    return () => window.removeEventListener('onboardingClosed', checkVisibility);
+  }, []);
+
+  useEffect(() => {
+    if (canShowWidget && agentId) {
       const scriptId = 'elevenlabs-convai-widget-official';
       if (!document.getElementById(scriptId)) {
         const script = document.createElement('script');
@@ -23,9 +38,9 @@ export default function AIAgentWidget() {
         document.body.appendChild(script);
       }
     }
-  }, []);
+  }, [canShowWidget, agentId]);
 
-  if (!agentId) return null;
+  if (!canShowWidget || !agentId) return null;
 
   return React.createElement('elevenlabs-convai', { 'agent-id': agentId });
 }
